@@ -1,0 +1,461 @@
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { 
+  Box, 
+  ArrowRight, 
+  CheckCircle2, 
+  Users, 
+  ShieldCheck, 
+  Building2, 
+  Bed, 
+  Wifi, 
+  ChevronRight, 
+  HelpCircle, 
+  Info, 
+  Calendar, 
+  Coffee,
+  Sparkles
+} from 'lucide-react';
+import { Building3D } from '../components/3d/Building3D';
+import { RoomDetailModal } from '../components/3d/RoomDetailModal';
+import { ILLUSTRATIVE_ROOMS, IllustrativeRoom } from '../data/illustrativeHostel';
+
+export const HomePage: React.FC = () => {
+  const [selectedRoom, setSelectedRoom] = useState<IllustrativeRoom | null>(null);
+
+  const stats = [
+    { label: 'Hostel Blocks', value: '2 Active', sub: 'Boys & Girls Wings' },
+    { label: 'Configured Beds', value: '24', sub: 'Across 3 levels' },
+    { label: 'Vacancy Rate', value: '45%', sub: 'Available for semester' },
+    { label: 'Guest Capacity', value: '8 Suites', sub: 'Short parent stays' },
+  ];
+
+  const blocks = [
+    {
+      name: 'Aryabhatta Block',
+      type: 'Boys Residence',
+      location: 'North Campus Quad',
+      rooms: 12,
+      capacity: 24,
+      tag: 'Interactive 3D Available',
+      badgeColor: 'bg-teal-100 text-teal-800',
+      description: 'Central residence hall equipped with study lounges, high-speed fibre internet, and solar water heating.',
+    },
+    {
+      name: 'Gargi Block',
+      type: 'Girls Residence',
+      location: 'South Campus Quad',
+      rooms: 12,
+      capacity: 24,
+      tag: 'Secure Access & Biometrics',
+      badgeColor: 'bg-purple-100 text-purple-800',
+      description: 'Modern residential complex with dedicated courtyard, round-the-clock female security wardens, and indoor recreation.',
+    },
+  ];
+
+  const roomTypes = [
+    {
+      type: 'Single Occupancy Room',
+      occupancy: '1 Student',
+      area: '14 - 16 sqm',
+      amenities: ['Private Study Desk', 'Ergonomic Chair', 'Attached Washroom', 'Air Conditioning Options', 'High-Speed Wi-Fi'],
+      suitable: 'Research scholars & final year students',
+    },
+    {
+      type: 'Double Sharing Room',
+      occupancy: '2 Students',
+      area: '18 - 20 sqm',
+      amenities: ['Dual Study Desks', 'Twin Wardrobes', 'Shared Attached Bath', 'Balcony Access', 'Individual Bedside Power'],
+      suitable: 'Undergraduate and postgraduate students',
+    },
+    {
+      type: 'Triple Suite Room',
+      occupancy: '3 Students',
+      area: '24 - 26 sqm',
+      amenities: ['Three Bed Units', 'Triple Locker Wardrobes', 'Spacious Common Area', 'Corner Room Ventilation', 'Dedicated Wi-Fi Hub'],
+      suitable: 'First-year students & group applicants',
+    },
+  ];
+
+  const faqs = [
+    {
+      q: 'Can students select their exact room number in the 3D Explorer?',
+      a: 'The 3D explorer enables students to explore room orientations, floor levels, and layout geometry. During enrollment, students record preferences (e.g. single/double room, floor level); final room allocations are confirmed by the warden based on institutional criteria.',
+    },
+    {
+      q: 'Do parents need student credentials to book guest accommodation?',
+      a: 'No. Parents and visitors can request short-term campus housing (typically 2 to 3 days) directly through the public Guest Accommodation portal without needing management or student login accounts.',
+    },
+    {
+      q: 'What is the distinction between illustrative 3D data and MySQL records?',
+      a: 'The 3D model currently represents a mathematically constructed illustrative architectural model. Live allocation and student records are queried from the MySQL `hms` database. Structural scans and CAD blueprints will replace the illustrative geometry in future institutional surveys.',
+    },
+    {
+      q: 'What are the check-in and curfew timings for hostel residents?',
+      a: 'Main hostel perimeter gates close at 10:00 PM on weekdays. Extended research library passes are authorized via the hostel warden office.',
+    },
+  ];
+
+  return (
+    <div className="space-y-16 lg:space-y-24 pb-20">
+      {/* 1. HERO SECTION */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-slate-900 via-institutional-950 to-slate-900 text-white pt-16 pb-24 border-b border-slate-800">
+        <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px] opacity-25 pointer-events-none"></div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            {/* Left Column: Headlines & Actions */}
+            <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/25 text-teal-300 text-xs font-semibold tracking-wide">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Next-Generation Campus Living</span>
+              </div>
+
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold font-display tracking-tight leading-tight">
+                Find Your Place. <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-300 via-institutional-300 to-sky-300">
+                  Explore Your Hostel.
+                </span>
+              </h1>
+
+              <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-normal">
+                Explore hostel facilities, discover room layouts in interactive 3D, check available accommodation, and submit your enrollment application through one convenient portal.
+              </p>
+
+              {/* Primary Actions */}
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3.5 pt-2">
+                <Link
+                  to="/explorer"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-sm shadow-lg shadow-teal-500/20 transition-all hover:scale-102"
+                >
+                  <Box className="w-4 h-4" />
+                  <span>Explore 3D Hostel</span>
+                </Link>
+
+                <Link
+                  to="/enrollment"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-white/10 hover:bg-white/15 text-white font-semibold text-sm border border-white/20 backdrop-blur-sm transition-all"
+                >
+                  <span>Apply for Hostel</span>
+                  <ArrowRight className="w-4 h-4 text-slate-300" />
+                </Link>
+
+                <Link
+                  to="/availability"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-lg text-slate-300 hover:text-white text-sm font-medium hover:bg-white/5 transition-colors"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span>Check Availability</span>
+                </Link>
+              </div>
+
+              {/* Secondary link */}
+              <div className="pt-2 text-xs text-slate-400 flex items-center justify-center lg:justify-start gap-2">
+                <span>Visiting parent or university guest?</span>
+                <Link to="/guest-accommodation" className="text-teal-400 hover:underline font-semibold flex items-center gap-1">
+                  <span>Book Guest Stay</span>
+                  <ChevronRight className="w-3 h-3" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Right Column: Interactive 3D Teaser Card */}
+            <div className="lg:col-span-5">
+              <div className="relative rounded-2xl bg-slate-800/80 p-2.5 border border-slate-700/80 shadow-2xl backdrop-blur-md">
+                <div className="h-[360px] w-full rounded-xl overflow-hidden relative">
+                  <Building3D
+                    rooms={ILLUSTRATIVE_ROOMS}
+                    selectedFloor="all"
+                    selectedRoom={selectedRoom}
+                    onSelectRoom={(r) => setSelectedRoom(r)}
+                    cutawayMode={false}
+                  />
+                </div>
+                <div className="p-3 text-center flex items-center justify-between">
+                  <span className="text-xs text-slate-400 font-medium flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>Interactive 3D Prototype</span>
+                  </span>
+                  <Link
+                    to="/explorer"
+                    className="text-xs text-teal-400 hover:text-teal-300 font-semibold flex items-center gap-1"
+                  >
+                    <span>Full Screen Explorer</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Metrics Strip */}
+          <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-slate-800 pt-8">
+            {stats.map((s, idx) => (
+              <div key={idx} className="bg-slate-850/60 border border-slate-800/80 p-4 rounded-xl">
+                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{s.label}</div>
+                <div className="text-2xl font-bold font-display text-white mt-1">{s.value}</div>
+                <div className="text-[11px] text-teal-400/90 mt-0.5">{s.sub}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 2. AVAILABLE HOSTEL BLOCKS */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-2xl mx-auto space-y-3 mb-12">
+          <span className="text-xs font-bold uppercase tracking-wider text-institutional-600 bg-institutional-50 px-3 py-1 rounded-full border border-institutional-200">
+            Residential Facilities
+          </span>
+          <h2 className="text-3xl font-bold font-display text-slate-900 tracking-tight">
+            Designed for Academic Focus & Community
+          </h2>
+          <p className="text-sm text-slate-600">
+            Our campus offers dedicated residence blocks designed specifically for safety, study comfort, and community development.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {blocks.map((block, i) => (
+            <div
+              key={i}
+              className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 hover:shadow-lg transition-all space-y-6 flex flex-col justify-between"
+            >
+              <div className="space-y-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      {block.type}
+                    </span>
+                    <h3 className="text-2xl font-bold font-display text-slate-900 mt-0.5">
+                      {block.name}
+                    </h3>
+                  </div>
+                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${block.badgeColor}`}>
+                    {block.tag}
+                  </span>
+                </div>
+
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  {block.description}
+                </p>
+
+                <div className="grid grid-cols-3 gap-3 py-3 border-y border-slate-100 text-center">
+                  <div>
+                    <div className="text-xs text-slate-500">Location</div>
+                    <div className="text-xs font-bold text-slate-800 mt-0.5">{block.location}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-slate-500">Rooms</div>
+                    <div className="text-xs font-bold text-slate-800 mt-0.5">{block.rooms} Units</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-slate-500">Total Capacity</div>
+                    <div className="text-xs font-bold text-slate-800 mt-0.5">{block.capacity} Beds</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <Link
+                  to="/explorer"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-institutional-700 hover:text-institutional-900"
+                >
+                  <span>Explore Building in 3D</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+
+                <Link
+                  to="/enrollment"
+                  className="px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-semibold hover:bg-slate-800 transition-colors"
+                >
+                  Select Preferences
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 3. ROOM TYPES & SPECIFICATIONS */}
+      <section className="bg-slate-100/70 border-y border-slate-200 py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto space-y-3 mb-12">
+            <span className="text-xs font-bold uppercase tracking-wider text-institutional-600 bg-white px-3 py-1 rounded-full border border-slate-200">
+              Accommodation Types
+            </span>
+            <h2 className="text-3xl font-bold font-display text-slate-900 tracking-tight">
+              Curated Room Categories
+            </h2>
+            <p className="text-sm text-slate-600">
+              Select an accommodation arrangement tailored to your study preferences and personal lifestyle.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {roomTypes.map((rt, idx) => (
+              <div
+                key={idx}
+                className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col justify-between shadow-sm space-y-6"
+              >
+                <div className="space-y-4">
+                  <div>
+                    <div className="text-xs font-semibold text-teal-700 uppercase tracking-wider">
+                      {rt.occupancy} • {rt.area}
+                    </div>
+                    <h3 className="text-xl font-bold font-display text-slate-900 mt-1">
+                      {rt.type}
+                    </h3>
+                  </div>
+
+                  <p className="text-xs text-slate-500 font-medium">
+                    Ideal for: <span className="text-slate-800 font-semibold">{rt.suitable}</span>
+                  </p>
+
+                  <ul className="space-y-2 text-xs text-slate-600 border-t border-slate-100 pt-3">
+                    {rt.amenities.map((amenity, i) => (
+                      <li key={i} className="flex items-center gap-2">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                        <span>{amenity}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <Link
+                  to="/enrollment"
+                  className="w-full text-center py-2.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-800 hover:bg-slate-50 transition-colors"
+                >
+                  Choose in Enrollment
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 4. FOUR-STEP ENROLLMENT WORKFLOW */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-2xl mx-auto space-y-3 mb-14">
+          <span className="text-xs font-bold uppercase tracking-wider text-institutional-600 bg-institutional-50 px-3 py-1 rounded-full border border-institutional-200">
+            Admissions Journey
+          </span>
+          <h2 className="text-3xl font-bold font-display text-slate-900 tracking-tight">
+            How Hostel Enrollment Works
+          </h2>
+          <p className="text-sm text-slate-600">
+            A transparent four-step application process with zero administrative password barriers for incoming students.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[
+            {
+              step: '01',
+              title: 'Student Details',
+              desc: 'Submit your personal identification, departmental enrollment, and contact credentials.',
+            },
+            {
+              step: '02',
+              title: 'Living Preferences',
+              desc: 'Configure room types, sleep cycle, language background, and dietary preferences.',
+            },
+            {
+              step: '03',
+              title: '3D Exploration',
+              desc: 'Inspect floor plans, orientations, and facility distributions across both hostel blocks.',
+            },
+            {
+              step: '04',
+              title: 'Warden Allocation',
+              desc: 'Receive confirmation and room allocation upon verification by the admissions committee.',
+            },
+          ].map((item, idx) => (
+            <div key={idx} className="bg-white border border-slate-200 rounded-xl p-6 relative space-y-3">
+              <span className="text-3xl font-extrabold font-display text-institutional-300/60 block">
+                {item.step}
+              </span>
+              <h4 className="text-base font-bold font-display text-slate-900">{item.title}</h4>
+              <p className="text-xs text-slate-500 leading-relaxed">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-8 text-center">
+          <Link
+            to="/enrollment"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-institutional-800 text-white rounded-lg text-sm font-semibold hover:bg-institutional-900 shadow-sm transition-colors"
+          >
+            <span>Start Online Application</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+      </section>
+
+      {/* 5. GUEST ACCOMMODATION CALLOUT */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-gradient-to-r from-institutional-900 to-slate-900 text-white rounded-3xl p-8 sm:p-12 shadow-xl border border-slate-800 flex flex-col lg:flex-row items-center justify-between gap-8">
+          <div className="space-y-4 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-semibold text-teal-300">
+              <Coffee className="w-3.5 h-3.5" />
+              <span>Dedicated Family & Visitor Housing</span>
+            </div>
+            <h3 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">
+              Visiting Parents & Guest Accommodation
+            </h3>
+            <p className="text-sm text-slate-300 leading-relaxed">
+              Parents attending orientation, convocation, or family visits can reserve on-campus guest suites for short-term stays (2 to 3 days). Clean, air-conditioned rooms with campus dining privileges.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto flex-shrink-0">
+            <Link
+              to="/guest-accommodation"
+              className="px-6 py-3 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-sm rounded-lg text-center shadow-lg transition-colors"
+            >
+              Request Guest Suite
+            </Link>
+            <Link
+              to="/contact"
+              className="px-6 py-3 bg-white/10 hover:bg-white/15 text-white font-medium text-sm rounded-lg border border-white/20 text-center transition-colors"
+            >
+              Inquire Policies
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* 6. FAQ ACCORDION */}
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl sm:text-3xl font-bold font-display text-slate-900 tracking-tight">
+            Frequently Asked Questions
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-500">
+            Common questions regarding residential policies, allocations, and digital portal operations.
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          {faqs.map((f, i) => (
+            <div key={i} className="bg-white border border-slate-200 rounded-xl p-5 space-y-2 shadow-sm">
+              <h4 className="text-sm font-bold text-slate-900 flex items-start gap-2">
+                <HelpCircle className="w-4 h-4 text-institutional-600 flex-shrink-0 mt-0.5" />
+                <span>{f.q}</span>
+              </h4>
+              <p className="text-xs text-slate-600 leading-relaxed pl-6">
+                {f.a}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Modal for inspect room when clicked in hero 3D preview */}
+      <RoomDetailModal
+        room={selectedRoom}
+        onClose={() => setSelectedRoom(null)}
+      />
+    </div>
+  );
+};
