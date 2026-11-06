@@ -23,7 +23,7 @@ export const Navbar: React.FC = () => {
     let mounted = true;
     apiClient.get('/health')
       .then((res) => {
-        if (mounted && res.data?.status === 'ok') {
+        if (mounted && (res.data?.status === 'success' || res.data?.status === 'ok')) {
           setDbStatus('connected');
         } else if (mounted) {
           setDbStatus('error');
@@ -100,30 +100,32 @@ export const Navbar: React.FC = () => {
 
           {/* Right Action: DB Status & Management Portal */}
           <div className="hidden sm:flex items-center gap-3">
-            {/* Database indicator */}
-            <div
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
-                dbStatus === 'connected'
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                  : dbStatus === 'error'
-                  ? 'bg-amber-50 text-amber-700 border-amber-200'
-                  : 'bg-slate-50 text-slate-500 border-slate-200'
-              }`}
-              title={
-                dbStatus === 'connected'
-                  ? 'Connected to local MySQL 8.4 database'
-                  : 'Backend API connection pending or offline'
-              }
-            >
-              <Activity className="w-3 h-3 animate-pulse" />
-              <span>
-                {dbStatus === 'connected'
-                  ? 'MySQL 8.4 Online'
-                  : dbStatus === 'error'
-                  ? 'Offline / Demo Mode'
-                  : 'Checking DB...'}
-              </span>
-            </div>
+            {/* Live Availability Verified Indicator */}
+            {dbStatus === 'connected' ? (
+              <div
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border bg-emerald-50 text-emerald-800 border-emerald-200"
+                title="Verified Live Availability from MySQL 8.4 database"
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Live Availability</span>
+              </div>
+            ) : dbStatus === 'error' ? (
+              <div
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-rose-50 text-rose-700 border-rose-200"
+                title="Backend API connection is currently unavailable"
+              >
+                <span className="w-2 h-2 rounded-full bg-rose-500" />
+                <span>Availability Offline</span>
+              </div>
+            ) : (
+              <div
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-slate-50 text-slate-500 border-slate-200"
+                title="Verifying database connection..."
+              >
+                <Activity className="w-3 h-3 animate-pulse" />
+                <span>Checking Live DB...</span>
+              </div>
+            )}
 
             {/* Management Portal Button */}
             <Link

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Lock, Eye, EyeOff, ShieldAlert, ArrowLeft } from 'lucide-react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export const ManagementLoginPage: React.FC = () => {
   const [staffId, setStaffId] = useState('');
@@ -8,27 +9,31 @@ export const ManagementLoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const from = (location.state as any)?.from?.pathname || '/management/dashboard';
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!staffId.trim() || !password) {
+      setError('Staff identifier/username and password are required.');
+      return;
+    }
+
     setLoading(true);
 
-    // NOTE: Master Prompt requirement - Do not claim authentication is implemented until
-    // server-validated endpoint POST /api/management/login is connected in Stage 5.
-    // For Stage 1 foundation preview, staff ID and password are validated for format.
-    setTimeout(() => {
-      if (!staffId.trim() || !password) {
-        setError('Staff ID and access password are required.');
-        setLoading(false);
-        return;
-      }
-
-      // Stage 1 preview entry with clear developmental state
-      navigate('/management/dashboard');
+    try {
+      await login(staffId.trim(), password);
+      navigate(from, { replace: true });
+    } catch (err: any) {
+      setError(err?.message || 'Authentication failed. Please verify your credentials.');
+    } finally {
       setLoading(false);
-    }, 600);
+    }
   };
 
   return (
@@ -46,17 +51,6 @@ export const ManagementLoginPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Development Notice */}
-        <div className="bg-amber-50 border border-amber-200 text-amber-900 text-xs p-3.5 rounded-xl space-y-1">
-          <div className="font-semibold flex items-center gap-1.5">
-            <ShieldAlert className="w-4 h-4 text-amber-600 flex-shrink-0" />
-            <span>Stage 1 Development Access Notice</span>
-          </div>
-          <p className="text-slate-600 text-[11px] leading-relaxed">
-            Full JWT session verification is scheduled for Stage 5 backend expansion. Any non-empty credentials will open the dashboard preview.
-          </p>
-        </div>
-
         {error && (
           <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-lg">
             {error}
@@ -65,11 +59,13 @@ export const ManagementLoginPage: React.FC = () => {
 
         <form onSubmit={handleLogin} className="space-y-4 text-xs">
           <div>
-            <label className="block text-slate-700 font-semibold mb-1">Staff Identifier</label>
+            <label className="block text-slate-700 font-semibold mb-1">Staff Identifier / Username</label>
             <input
               type="text"
               required
-              placeholder="e.g. WARDEN-01 or STF-104"
+              autoFocus
+              autoComplete="username"
+              placeholder="e.g. warden_admin"
               value={staffId}
               onChange={(e) => setStaffId(e.target.value)}
               className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-institutional-600"
@@ -82,6 +78,7 @@ export const ManagementLoginPage: React.FC = () => {
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
+                autoComplete="current-password"
                 placeholder="••••••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -101,7 +98,7 @@ export const ManagementLoginPage: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 px-4 bg-institutional-800 hover:bg-institutional-900 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors flex items-center justify-center gap-2"
+            className="w-full py-2.5 px-4 bg-institutional-800 hover:bg-institutional-900 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
           >
             {loading ? (
               <span>Authenticating Credentials...</span>

@@ -10,23 +10,33 @@ import { ContactPage } from './pages/ContactPage';
 import { ManagementLoginPage } from './pages/ManagementLoginPage';
 import { ManagementDashboard } from './pages/ManagementDashboard';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { AuthProvider, ProtectedRoute } from './context/AuthContext';
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<HomePage />} />
-          <Route path="explorer" element={<ExplorerPage />} />
-          <Route path="availability" element={<AvailabilityPage />} />
-          <Route path="guest-accommodation" element={<GuestPage />} />
-          <Route path="enrollment" element={<EnrollmentPage />} />
-          <Route path="contact" element={<ContactPage />} />
-          <Route path="management/login" element={<ManagementLoginPage />} />
-          <Route path="management/dashboard" element={<ManagementDashboard />} />
-          <Route path="*" element={<NotFoundPage />} />
-        </Route>
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<HomePage />} />
+            <Route path="explorer" element={<ExplorerPage />} />
+            <Route path="availability" element={<AvailabilityPage />} />
+            <Route path="guest-accommodation" element={<GuestPage />} />
+            <Route path="enrollment" element={<EnrollmentPage />} />
+            <Route path="contact" element={<ContactPage />} />
+            <Route path="management/login" element={<ManagementLoginPage />} />
+            <Route
+              path="management/dashboard"
+              element={
+                <ProtectedRoute>
+                  <ManagementDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<NotFoundPage />} />
+          </Route>
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

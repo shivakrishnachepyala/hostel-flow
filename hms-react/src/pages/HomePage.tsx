@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Box, 
@@ -19,16 +19,94 @@ import {
 import { Building3D } from '../components/3d/Building3D';
 import { RoomDetailModal } from '../components/3d/RoomDetailModal';
 import { ILLUSTRATIVE_ROOMS, IllustrativeRoom } from '../data/illustrativeHostel';
+import { apiClient } from '../services/apiClient';
+import { Hostel, HostelBlock, Room, Bed as BedType, RoomAllocation } from '../types';
 
 export const HomePage: React.FC = () => {
   const [selectedRoom, setSelectedRoom] = useState<IllustrativeRoom | null>(null);
 
-  const stats = [
-    { label: 'Hostel Blocks', value: '2 Active', sub: 'Boys & Girls Wings' },
-    { label: 'Configured Beds', value: '24', sub: 'Across 3 levels' },
-    { label: 'Vacancy Rate', value: '45%', sub: 'Available for semester' },
-    { label: 'Guest Capacity', value: '8 Suites', sub: 'Short parent stays' },
-  ];
+  // Authoritative MySQL Entities from Flask Backend
+  const [dbHostels, setDbHostels] = useState<Hostel[]>([]);
+  const [dbBlocks, setDbBlocks] = useState<HostelBlock[]>([]);
+  const [dbRooms, setDbRooms] = useState<Room[]>([]);
+  const [dbBeds, setDbBeds] = useState<BedType[]>([]);
+  const [dbAllocations, setDbAllocations] = useState<RoomAllocation[]>([]);
+  const [isLiveConnected, setIsLiveConnected] = useState<boolean>(false);
+
+  useEffect(() => {
+    let mounted = true;
+    Promise.all([
+      apiClient.get('/hostels/'),
+      apiClient.get('/hostel-blocks/'),
+      apiClient.get('/rooms/'),
+      apiClient.get('/beds/'),
+      apiClient.get('/room-allocations/?status=Active'),
+    ])
+      .then(([hRes, bRes, rRes, bdRes, aRes]) => {
+        if (!mounted) return;
+        if (hRes.data?.data) setDbHostels(hRes.data.data);
+        if (bRes.data?.data) setDbBlocks(bRes.data.data);
+        if (rRes.data?.data) setDbRooms(rRes.data.data);
+        if (bdRes.data?.data) setDbBeds(bdRes.data.data);
+        if (aRes.data?.data) setDbAllocations(aRes.data.data);
+        setIsLiveConnected(true);
+      })
+      .catch((err) => {
+        console.error('HomePage failed to fetch live database metrics:', err);
+        if (mounted) setIsLiveConnected(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
+
+  const activeAllocatedBedIds = useMemo(() => {
+    const set = new Set<number>();
+    dbAllocations.forEach(a => {
+      if (a.Allocation_Status === 'Active' && a.Bed_ID) {
+        const startOk = !a.Start_Date || a.Start_Date <= todayStr;
+        const endOk = !a.End_Date || a.End_Date >= todayStr;
+        if (startOk && endOk) set.add(a.Bed_ID);
+      }
+    });
+    return set;
+  }, [dbAllocations, todayStr]);
+
+  const totalBedsCount = dbBeds.length;
+  const vacantBedsCount = useMemo(() => {
+    return dbBeds.filter(b => {
+      const isAvail = (b.Bed_Status || 'Available').toLowerCase() === 'available';
+      return isAvail && !activeAllocatedBedIds.has(b.Bed_ID);
+    }).length;
+  }, [dbBeds, activeAllocatedBedIds]);
+
+  const liveStats = useMemo(() => {
+    return [
+      { 
+        label: 'Hostel Buildings', 
+        value: isLiveConnected ? `${dbHostels.length} Active` : '—', 
+        sub: isLiveConnected ? `${dbBlocks.length} Residential Blocks` : 'Checking MySQL...' 
+      },
+      { 
+        label: 'Configured Beds', 
+        value: isLiveConnected ? `${totalBedsCount}` : '—', 
+        sub: isLiveConnected ? `${dbRooms.length} Registered Units` : 'Live Inventory' 
+      },
+      { 
+        label: 'Live Vacancies', 
+        value: isLiveConnected ? (vacantBedsCount > 0 ? `${vacantBedsCount} Free` : 'Currently Full') : '—', 
+        sub: isLiveConnected && totalBedsCount > 0 ? `${Math.round((vacantBedsCount / totalBedsCount) * 100)}% Available Now` : 'Verified Database' 
+      },
+      { 
+        label: 'Active Leases', 
+        value: isLiveConnected ? `${dbAllocations.length} Active` : '—', 
+        sub: 'Room Allocations' 
+      },
+    ];
+  }, [isLiveConnected, dbHostels, dbBlocks, dbRooms, totalBedsCount, vacantBedsCount, dbAllocations]);
 
   const blocks = [
     {
@@ -106,9 +184,17 @@ export const HomePage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             {/* Left Column: Headlines & Actions */}
             <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/25 text-teal-300 text-xs font-semibold tracking-wide">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Next-Generation Campus Living</span>
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/25 text-teal-300 text-xs font-semibold tracking-wide">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Next-Generation Campus Living</span>
+                </div>
+                {isLiveConnected && (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold tracking-wide">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>Live Availability</span>
+                  </div>
+                )}
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold font-display tracking-tight leading-tight">
@@ -188,9 +274,9 @@ export const HomePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Metrics Strip */}
+          {/* Quick Metrics Strip (Live Database Metrics) */}
           <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-slate-800 pt-8">
-            {stats.map((s, idx) => (
+            {liveStats.map((s, idx) => (
               <div key={idx} className="bg-slate-850/60 border border-slate-800/80 p-4 rounded-xl">
                 <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{s.label}</div>
                 <div className="text-2xl font-bold font-display text-white mt-1">{s.value}</div>
@@ -201,7 +287,7 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* 2. AVAILABLE HOSTEL BLOCKS */}
+      {/* 2. AVAILABLE HOSTEL BLOCKS (Authoritative MySQL Records) */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto space-y-3 mb-12">
           <span className="text-xs font-bold uppercase tracking-wider text-institutional-600 bg-institutional-50 px-3 py-1 rounded-full border border-institutional-200">
@@ -215,66 +301,86 @@ export const HomePage: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {blocks.map((block, i) => (
-            <div
-              key={i}
-              className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 hover:shadow-lg transition-all space-y-6 flex flex-col justify-between"
-            >
-              <div className="space-y-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      {block.type}
-                    </span>
-                    <h3 className="text-2xl font-bold font-display text-slate-900 mt-0.5">
-                      {block.name}
-                    </h3>
-                  </div>
-                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${block.badgeColor}`}>
-                    {block.tag}
-                  </span>
-                </div>
+        {dbHostels.length === 0 ? (
+          <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center space-y-3">
+            <Building2 className="w-10 h-10 text-slate-400 mx-auto" />
+            <h3 className="text-base font-bold text-slate-800">No accommodation currently listed</h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              No hostel buildings have been registered in the database yet. When management configures hostels and blocks, live occupancy will appear here.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {dbHostels.map((hostel) => {
+              const hostelBlocks = dbBlocks.filter(b => b.Hostel_ID === hostel.Hostel_ID);
+              const hostelRooms = dbRooms.filter(r => hostelBlocks.some(b => b.Block_ID === r.Block_ID));
+              const hostelBeds = dbBeds.filter(bd => hostelRooms.some(r => r.Room_ID === bd.Room_ID));
+              const hostelVacantBeds = hostelBeds.filter(bd => {
+                const isAvail = (bd.Bed_Status || 'Available').toLowerCase() === 'available';
+                return isAvail && !activeAllocatedBedIds.has(bd.Bed_ID);
+              }).length;
 
-                <p className="text-sm text-slate-600 leading-relaxed">
-                  {block.description}
-                </p>
-
-                <div className="grid grid-cols-3 gap-3 py-3 border-y border-slate-100 text-center">
-                  <div>
-                    <div className="text-xs text-slate-500">Location</div>
-                    <div className="text-xs font-bold text-slate-800 mt-0.5">{block.location}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-slate-500">Rooms</div>
-                    <div className="text-xs font-bold text-slate-800 mt-0.5">{block.rooms} Units</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-slate-500">Total Capacity</div>
-                    <div className="text-xs font-bold text-slate-800 mt-0.5">{block.capacity} Beds</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-2">
-                <Link
-                  to="/explorer"
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-institutional-700 hover:text-institutional-900"
+              return (
+                <div
+                  key={hostel.Hostel_ID}
+                  className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 hover:shadow-lg transition-all space-y-6 flex flex-col justify-between"
                 >
-                  <span>Explore Building in 3D</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
+                  <div className="space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                          {hostel.Hostel_Type || 'Campus'} Residence
+                        </span>
+                        <h3 className="text-2xl font-bold font-display text-slate-900 mt-0.5">
+                          {hostel.Hostel_Name}
+                        </h3>
+                      </div>
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-teal-100 text-teal-800">
+                        {hostelVacantBeds > 0 ? `${hostelVacantBeds} Beds Free` : 'Currently Full'}
+                      </span>
+                    </div>
 
-                <Link
-                  to="/enrollment"
-                  className="px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-semibold hover:bg-slate-800 transition-colors"
-                >
-                  Select Preferences
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
+                    <p className="text-sm text-slate-600 leading-relaxed">
+                      Official student residential facility located at {hostel.Location || 'Main Campus'}. Central residence hall equipped with study lounges, high-speed fibre internet, and solar water heating.
+                    </p>
+
+                    <div className="grid grid-cols-3 gap-3 py-3 border-y border-slate-100 text-center">
+                      <div>
+                        <div className="text-xs text-slate-500">Location</div>
+                        <div className="text-xs font-bold text-slate-800 mt-0.5">{hostel.Location || 'Campus'}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-slate-500">Blocks</div>
+                        <div className="text-xs font-bold text-slate-800 mt-0.5">{hostelBlocks.length || 1} Blocks</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-slate-500">Total Capacity</div>
+                        <div className="text-xs font-bold text-slate-800 mt-0.5">{hostel.Capacity || hostelBeds.length || 'N/A'} Beds</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2">
+                    <Link
+                      to="/availability"
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-institutional-700 hover:text-institutional-900"
+                    >
+                      <span>Check Live Room Availability</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+
+                    <Link
+                      to="/enrollment"
+                      className="px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-semibold hover:bg-slate-800 transition-colors"
+                    >
+                      Apply for Hostel
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* 3. ROOM TYPES & SPECIFICATIONS */}

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Menu, LogOut, ExternalLink, Database } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 interface WardenTopbarProps {
   pageTitle: string;
@@ -11,6 +12,23 @@ export const WardenTopbar: React.FC<WardenTopbarProps> = ({
   pageTitle,
   onOpenMobileMenu,
 }) => {
+  const { warden, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await logout();
+    navigate('/management/login', { replace: true });
+  };
+
+  const getInitials = (name?: string) => {
+    if (!name) return 'WA';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
+
   return (
     <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between gap-4">
       {/* Left section: Breadcrumbs & Page title */}
@@ -58,23 +76,27 @@ export const WardenTopbar: React.FC<WardenTopbarProps> = ({
         {/* Warden Profile Info */}
         <div className="flex items-center gap-2.5 pl-2 sm:pl-3 border-l border-slate-200">
           <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs tracking-wider shadow-sm">
-            WA
+            {getInitials(warden?.Warden_Name)}
           </div>
           <div className="hidden xl:block text-left">
-            <div className="text-xs font-bold text-slate-900 leading-tight">Chief Warden</div>
-            <div className="text-[10px] font-medium text-slate-400">Hostel Admin</div>
+            <div className="text-xs font-bold text-slate-900 leading-tight">
+              {warden?.Warden_Name || 'Chief Warden'}
+            </div>
+            <div className="text-[10px] font-medium text-slate-400">
+              {warden?.Role || 'Hostel Admin'} {warden?.Username ? `(@${warden.Username})` : ''}
+            </div>
           </div>
         </div>
 
         {/* Sign Out Button */}
-        <Link
-          to="/management/login"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-xs font-bold text-rose-700 hover:bg-rose-100 hover:border-rose-300 transition-colors"
+        <button
+          onClick={handleSignOut}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-xs font-bold text-rose-700 hover:bg-rose-100 hover:border-rose-300 transition-colors cursor-pointer"
           title="Sign out of administration session"
         >
           <LogOut className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Sign Out</span>
-        </Link>
+        </button>
       </div>
     </header>
   );
