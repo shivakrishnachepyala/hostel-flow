@@ -1,12 +1,14 @@
-
 from flask import Blueprint, jsonify, request
 from db import get_db_connection
+from routes.route_utils import format_row, handle_db_error
+from services.auth_service import warden_required
 
 hostel_bp = Blueprint("hostel", __name__, url_prefix="/api/hostels")
 
 
 # GET: Retrieve all hostels
-@hostel_bp.route("/", methods=["GET"])
+@hostel_bp.route("/", methods=["GET"], strict_slashes=False)
+@hostel_bp.route("", methods=["GET"], strict_slashes=False)
 def get_hostels():
     connection = None
     cursor = None
@@ -21,7 +23,7 @@ def get_hostels():
             ORDER BY Hostel_ID
         """)
 
-        hostels = cursor.fetchall()
+        hostels = [format_row(row) for row in cursor.fetchall()]
 
         return jsonify({
             "status": "success",
@@ -30,11 +32,46 @@ def get_hostels():
         }), 200
 
     except Exception as error:
-        print("GET HOSTELS ERROR:", repr(error))
+        return handle_db_error(error, "retrieving hostels")
+
+    finally:
+        if cursor:
+            cursor.close()
+        if connection and connection.is_connected():
+            connection.close()
+
+
+# GET: Retrieve single hostel by ID
+@hostel_bp.route("/<int:hostel_id>", methods=["GET"], strict_slashes=False)
+def get_hostel(hostel_id):
+    connection = None
+    cursor = None
+
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT Hostel_ID, Hostel_Name, Location, Capacity, Hostel_Type
+            FROM hostel
+            WHERE Hostel_ID = %s
+        """, (hostel_id,))
+
+        hostel = cursor.fetchone()
+
+        if not hostel:
+            return jsonify({
+                "status": "error",
+                "message": "Hostel not found."
+            }), 404
+
         return jsonify({
-            "status": "error",
-            "message": "Unable to retrieve hostels."
-        }), 500
+            "status": "success",
+            "data": format_row(hostel)
+        }), 200
+
+    except Exception as error:
+        return handle_db_error(error, "retrieving hostel")
 
     finally:
         if cursor:
@@ -44,7 +81,9 @@ def get_hostels():
 
 
 # POST: Create a new hostel
-@hostel_bp.route("/", methods=["POST"])
+@hostel_bp.route("/", methods=["POST"], strict_slashes=False)
+@hostel_bp.route("", methods=["POST"], strict_slashes=False)
+@warden_required
 def create_hostel():
     connection = None
     cursor = None
@@ -82,8 +121,23 @@ def create_hostel():
                 "message": "Hostel_Name must be a non-empty string."
             }), 400
 
+        capacity = data.get("Capacity", 0)
+        if capacity is not None and (isinstance(capacity, bool) or not isinstance(capacity, int) or capacity < 0):
+            return jsonify({
+                "status": "error",
+                "message": "Capacity must be a non-negative integer."
+            }), 400
+
         connection = get_db_connection()
         cursor = connection.cursor()
+
+        # Check primary key existence
+        cursor.execute("SELECT Hostel_ID FROM hostel WHERE Hostel_ID = %s", (hostel_id,))
+        if cursor.fetchone():
+            return jsonify({
+                "status": "error",
+                "message": f"Hostel with Hostel_ID {hostel_id} already exists."
+            }), 409
 
         cursor.execute("""
             INSERT INTO hostel
@@ -93,7 +147,7 @@ def create_hostel():
             hostel_id,
             hostel_name.strip(),
             data.get("Location"),
-            data.get("Capacity", 0),
+            capacity,
             data.get("Hostel_Type")
         ))
 
@@ -106,15 +160,9 @@ def create_hostel():
         }), 201
 
     except Exception as error:
-        print("CREATE HOSTEL ERROR:", repr(error))
-
         if connection and connection.is_connected():
             connection.rollback()
-
-        return jsonify({
-            "status": "error",
-            "message": "Unable to create hostel. Check the server logs."
-        }), 500
+        return handle_db_error(error, "creating hostel")
 
     finally:
         if cursor:
@@ -122,8 +170,10 @@ def create_hostel():
         if connection and connection.is_connected():
             connection.close()
 
+
 # PUT: Update an existing hostel
-@hostel_bp.route("/<int:hostel_id>", methods=["PUT"])
+@hostel_bp.route("/<int:hostel_id>", methods=["PUT"], strict_slashes=False)
+@warden_required
 def update_hostel(hostel_id):
     connection = None
     cursor = None
@@ -162,12 +212,10 @@ def update_hostel(hostel_id):
                     "status": "error",
                     "message": "Hostel_Name cannot be empty."
                 }), 400
-
             updates["Hostel_Name"] = updates["Hostel_Name"].strip()
 
-        if "Capacity" in updates:
+        if "Capacity" in updates and updates["Capacity"] is not None:
             capacity = updates["Capacity"]
-
             if isinstance(capacity, bool) or not isinstance(capacity, int) or capacity < 0:
                 return jsonify({
                     "status": "error",
@@ -208,15 +256,9 @@ def update_hostel(hostel_id):
         }), 200
 
     except Exception as error:
-        print("UPDATE HOSTEL ERROR:", repr(error))
-
         if connection and connection.is_connected():
             connection.rollback()
-
-        return jsonify({
-            "status": "error",
-            "message": "Unable to update hostel."
-        }), 500
+        return handle_db_error(error, "updating hostel")
 
     finally:
         if cursor:
@@ -224,8 +266,10 @@ def update_hostel(hostel_id):
         if connection and connection.is_connected():
             connection.close()
 
+
 # DELETE: Remove a hostel
-@hostel_bp.route("/<int:hostel_id>", methods=["DELETE"])
+@hostel_bp.route("/<int:hostel_id>", methods=["DELETE"], strict_slashes=False)
+@warden_required
 def delete_hostel(hostel_id):
     connection = None
     cursor = None
@@ -259,15 +303,9 @@ def delete_hostel(hostel_id):
         }), 200
 
     except Exception as error:
-        print("DELETE HOSTEL ERROR:", repr(error))
-
         if connection and connection.is_connected():
             connection.rollback()
-
-        return jsonify({
-            "status": "error",
-            "message": "Unable to delete hostel."
-        }), 500
+        return handle_db_error(error, "deleting hostel")
 
     finally:
         if cursor:

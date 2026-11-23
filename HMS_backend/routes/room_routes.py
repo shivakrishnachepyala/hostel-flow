@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from db import get_db_connection
 from routes.route_utils import format_row, handle_db_error
+from services.auth_service import warden_required
 
 room_bp = Blueprint("room", __name__, url_prefix="/api/rooms")
 
@@ -18,19 +19,23 @@ def get_rooms():
         connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
 
+        query = """
+            SELECT r.Room_ID, r.Room_Number, r.Floor, r.Room_Type, r.Capacity, r.Facilities, r.Layout_Data, r.Block_ID,
+                   b.Block_Name, b.Gender AS Block_Gender,
+                   h.Hostel_ID, h.Hostel_Name,
+                   (SELECT COUNT(*) FROM room_allocation WHERE Room_ID = r.Room_ID AND Allocation_Status = 'Active') AS Occupied_Beds,
+                   (SELECT COUNT(*) FROM bed WHERE Room_ID = r.Room_ID) AS Total_Beds
+            FROM room r
+            LEFT JOIN hostel_block b ON r.Block_ID = b.Block_ID
+            LEFT JOIN hostel h ON b.Hostel_ID = h.Hostel_ID
+        """
+        params = []
         if block_id is not None:
-            cursor.execute("""
-                SELECT Room_ID, Room_Number, Floor, Room_Type, Capacity, Facilities, Layout_Data, Block_ID
-                FROM room
-                WHERE Block_ID = %s
-                ORDER BY Room_ID
-            """, (block_id,))
-        else:
-            cursor.execute("""
-                SELECT Room_ID, Room_Number, Floor, Room_Type, Capacity, Facilities, Layout_Data, Block_ID
-                FROM room
-                ORDER BY Room_ID
-            """)
+            query += " WHERE r.Block_ID = %s"
+            params.append(block_id)
+        query += " ORDER BY r.Room_ID"
+
+        cursor.execute(query, tuple(params))
 
         rooms = [format_row(row) for row in cursor.fetchall()]
 
@@ -92,6 +97,7 @@ def get_room(room_id):
 # POST: Create a new room
 @room_bp.route("/", methods=["POST"], strict_slashes=False)
 @room_bp.route("", methods=["POST"], strict_slashes=False)
+@warden_required
 def create_room():
     connection = None
     cursor = None
@@ -205,6 +211,7 @@ def create_room():
 
 # PUT: Update an existing room
 @room_bp.route("/<int:room_id>", methods=["PUT"], strict_slashes=False)
+@warden_required
 def update_room(room_id):
     connection = None
     cursor = None
@@ -311,6 +318,7 @@ def update_room(room_id):
 
 # DELETE: Remove a room
 @room_bp.route("/<int:room_id>", methods=["DELETE"], strict_slashes=False)
+@warden_required
 def delete_room(room_id):
     connection = None
     cursor = None

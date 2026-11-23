@@ -1,0 +1,37 @@
+-- Migration: 003_create_guest_stay_table.sql
+-- Description: Create guest_stay table for visitor accommodation requests, approval tracking, and check-in/out management.
+
+CREATE TABLE IF NOT EXISTS guest_stay (
+    Guest_ID INT AUTO_INCREMENT PRIMARY KEY,
+    Reference_No VARCHAR(50) NOT NULL UNIQUE,
+    Guest_Name VARCHAR(150) NOT NULL,
+    Email VARCHAR(150) NOT NULL,
+    Phone VARCHAR(30) NOT NULL,
+    Purpose VARCHAR(100) NOT NULL DEFAULT 'Parent of Current Student',
+    Student_Reference VARCHAR(150) NULL,
+    Student_ID INT NULL,
+    Check_In_Date DATE NOT NULL,
+    Check_Out_Date DATE NOT NULL,
+    Guest_Count INT NOT NULL DEFAULT 1,
+    Room_Preference VARCHAR(100) NOT NULL DEFAULT 'Standard Visitor Room',
+    Assigned_Room_ID INT NULL,
+    Special_Requests TEXT NULL,
+    Status VARCHAR(30) NOT NULL DEFAULT 'Pending',
+    Check_In_Status VARCHAR(30) NOT NULL DEFAULT 'Pending',
+    Actual_Check_In DATETIME NULL,
+    Actual_Check_Out DATETIME NULL,
+    Rejection_Reason TEXT NULL,
+    Admin_Remarks TEXT NULL,
+    Approved_By INT NULL,
+    Approved_At DATETIME NULL,
+    Created_At TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Updated_At TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_guest_student FOREIGN KEY (Student_ID) REFERENCES student(Student_ID) ON DELETE SET NULL,
+    CONSTRAINT fk_guest_room FOREIGN KEY (Assigned_Room_ID) REFERENCES room(Room_ID) ON DELETE SET NULL,
+    CONSTRAINT fk_guest_warden FOREIGN KEY (Approved_By) REFERENCES warden_auth(Warden_ID) ON DELETE SET NULL,
+    INDEX idx_guest_ref (Reference_No),
+    INDEX idx_guest_status (Status),
+    INDEX idx_guest_checkin_status (Check_In_Status),
+    INDEX idx_guest_dates (Check_In_Date, Check_Out_Date),
+    INDEX idx_guest_created (Created_At)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from db import get_db_connection
 from routes.route_utils import format_row, handle_db_error
+from services.auth_service import warden_required
 
 bed_bp = Blueprint("bed", __name__, url_prefix="/api/beds")
 
@@ -19,22 +20,35 @@ def get_beds():
         connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
 
-        query = "SELECT Bed_ID, Bed_Number, Bed_Type, Bed_Status, Room_ID FROM bed"
+        query = """
+            SELECT b.Bed_ID, b.Bed_Number, b.Bed_Type, b.Bed_Status, b.Room_ID,
+                   r.Room_Number, r.Floor, r.Room_Type,
+                   hb.Block_Name,
+                   h.Hostel_Name,
+                   s.Student_ID AS Occupant_Student_ID,
+                   s.Name AS Occupant_Name
+            FROM bed b
+            LEFT JOIN room r ON b.Room_ID = r.Room_ID
+            LEFT JOIN hostel_block hb ON r.Block_ID = hb.Block_ID
+            LEFT JOIN hostel h ON hb.Hostel_ID = h.Hostel_ID
+            LEFT JOIN room_allocation ra ON (b.Bed_ID = ra.Bed_ID AND ra.Allocation_Status = 'Active')
+            LEFT JOIN student s ON ra.Student_ID = s.Student_ID
+        """
         conditions = []
         params = []
 
         if room_id is not None:
-            conditions.append("Room_ID = %s")
+            conditions.append("b.Room_ID = %s")
             params.append(room_id)
 
         if status:
-            conditions.append("Bed_Status = %s")
+            conditions.append("b.Bed_Status = %s")
             params.append(status.strip())
 
         if conditions:
             query += " WHERE " + " AND ".join(conditions)
 
-        query += " ORDER BY Bed_ID"
+        query += " ORDER BY b.Bed_ID"
 
         cursor.execute(query, tuple(params))
         beds = [format_row(row) for row in cursor.fetchall()]
@@ -97,6 +111,7 @@ def get_bed(bed_id):
 # POST: Create a new bed
 @bed_bp.route("/", methods=["POST"], strict_slashes=False)
 @bed_bp.route("", methods=["POST"], strict_slashes=False)
+@warden_required
 def create_bed():
     connection = None
     cursor = None
@@ -193,6 +208,7 @@ def create_bed():
 
 # PUT: Update an existing bed
 @bed_bp.route("/<int:bed_id>", methods=["PUT"], strict_slashes=False)
+@warden_required
 def update_bed(bed_id):
     connection = None
     cursor = None
@@ -282,6 +298,7 @@ def update_bed(bed_id):
 
 # DELETE: Remove a bed
 @bed_bp.route("/<int:bed_id>", methods=["DELETE"], strict_slashes=False)
+@warden_required
 def delete_bed(bed_id):
     connection = None
     cursor = None

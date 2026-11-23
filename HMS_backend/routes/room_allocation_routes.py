@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from db import get_db_connection
 from routes.route_utils import format_row, handle_db_error, parse_date
+from services.auth_service import warden_required, get_current_warden
 
 room_allocation_bp = Blueprint(
     "room_allocation",
@@ -9,7 +10,66 @@ room_allocation_bp = Blueprint(
 )
 
 
+# GET: Public active allocation status for capacity and vacancy calculation
+# Excludes all Student PII (Student_ID, personal records) to preserve student privacy
+@room_allocation_bp.route("/active", methods=["GET"], strict_slashes=False)
+@room_allocation_bp.route("/public", methods=["GET"], strict_slashes=False)
+def get_public_active_allocations():
+    connection = None
+    cursor = None
+
+    try:
+        room_id = request.args.get("room_id", type=int)
+        bed_id = request.args.get("bed_id", type=int)
+
+        connection = get_db_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        query = """
+            SELECT Allocation_ID, Room_ID, Bed_ID,
+                   Allocation_Date, Start_Date, End_Date, Allocation_Status
+            FROM room_allocation
+            WHERE Allocation_Status = 'Active'
+        """
+        conditions = []
+        params = []
+
+        if room_id is not None:
+            conditions.append("Room_ID = %s")
+            params.append(room_id)
+
+        if bed_id is not None:
+            conditions.append("Bed_ID = %s")
+            params.append(bed_id)
+
+        if conditions:
+            query += " AND " + " AND ".join(conditions)
+
+        query += " ORDER BY Allocation_ID"
+
+        cursor.execute(query, tuple(params))
+        allocations = [format_row(row) for row in cursor.fetchall()]
+
+        return jsonify({
+            "status": "success",
+            "count": len(allocations),
+            "data": allocations
+        }), 200
+
+    except Exception as error:
+        return handle_db_error(error, "retrieving public room allocations")
+
+    finally:
+        if cursor:
+            cursor.close()
+        if connection and connection.is_connected():
+            connection.close()
+
+
 # GET: Retrieve all allocations with optional filters
+# Authenticated wardens receive full records including Student_ID.
+# Unauthenticated visitors may only query active allocation status (for vacancy computing),
+# in which case Student_ID is strictly stripped to protect student privacy.
 @room_allocation_bp.route("/", methods=["GET"], strict_slashes=False)
 @room_allocation_bp.route("", methods=["GET"], strict_slashes=False)
 def get_room_allocations():
@@ -22,37 +82,70 @@ def get_room_allocations():
         bed_id = request.args.get("bed_id", type=int)
         status = request.args.get("status")
 
+        warden = get_current_warden()
+
+        # Authorization check:
+        # If unauthenticated, only allow public vacancy calculation queries (status='Active' and no student_id filter).
+        # Any attempt to access student-linked allocations or list general allocations requires warden auth.
+        if not warden:
+            if status and status.strip().lower() == "active" and student_id is None:
+                is_public_view = True
+            else:
+                return jsonify({
+                    "status": "error",
+                    "message": "Authentication required. Missing token."
+                }), 401
+        else:
+            is_public_view = False
+
         connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
 
-        query = """
-            SELECT Allocation_ID, Student_ID, Room_ID, Bed_ID,
-                   Allocation_Date, Start_Date, End_Date, Allocation_Status
-            FROM room_allocation
-        """
+        if is_public_view:
+            query = """
+                SELECT a.Allocation_ID, a.Room_ID, a.Bed_ID,
+                       a.Allocation_Date, a.Start_Date, a.End_Date, a.Allocation_Status
+                FROM room_allocation a
+            """
+        else:
+            query = """
+                SELECT a.Allocation_ID, a.Student_ID, a.Room_ID, a.Bed_ID,
+                       a.Allocation_Date, a.Start_Date, a.End_Date, a.Allocation_Status,
+                       s.Name AS Student_Name, s.Department AS Student_Dept, s.Email AS Student_Email,
+                       r.Room_Number, r.Floor AS Room_Floor, r.Room_Type,
+                       b.Bed_Number,
+                       hb.Block_Name,
+                       h.Hostel_Name
+                FROM room_allocation a
+                LEFT JOIN student s ON a.Student_ID = s.Student_ID
+                LEFT JOIN room r ON a.Room_ID = r.Room_ID
+                LEFT JOIN bed b ON a.Bed_ID = b.Bed_ID
+                LEFT JOIN hostel_block hb ON r.Block_ID = hb.Block_ID
+                LEFT JOIN hostel h ON hb.Hostel_ID = h.Hostel_ID
+            """
         conditions = []
         params = []
 
-        if student_id is not None:
-            conditions.append("Student_ID = %s")
+        if student_id is not None and not is_public_view:
+            conditions.append("a.Student_ID = %s")
             params.append(student_id)
 
         if room_id is not None:
-            conditions.append("Room_ID = %s")
+            conditions.append("a.Room_ID = %s")
             params.append(room_id)
 
         if bed_id is not None:
-            conditions.append("Bed_ID = %s")
+            conditions.append("a.Bed_ID = %s")
             params.append(bed_id)
 
         if status:
-            conditions.append("Allocation_Status = %s")
+            conditions.append("a.Allocation_Status = %s")
             params.append(status.strip())
 
         if conditions:
             query += " WHERE " + " AND ".join(conditions)
 
-        query += " ORDER BY Allocation_ID"
+        query += " ORDER BY a.Allocation_ID"
 
         cursor.execute(query, tuple(params))
         allocations = [format_row(row) for row in cursor.fetchall()]
@@ -75,6 +168,7 @@ def get_room_allocations():
 
 # GET: Retrieve single allocation by ID
 @room_allocation_bp.route("/<int:allocation_id>", methods=["GET"], strict_slashes=False)
+@warden_required
 def get_room_allocation(allocation_id):
     connection = None
     cursor = None
@@ -116,6 +210,7 @@ def get_room_allocation(allocation_id):
 # POST: Create a new room allocation with row locking and overlap prevention
 @room_allocation_bp.route("/", methods=["POST"], strict_slashes=False)
 @room_allocation_bp.route("", methods=["POST"], strict_slashes=False)
+@warden_required
 def create_room_allocation():
     connection = None
     cursor = None
@@ -282,6 +377,7 @@ def create_room_allocation():
 
 # PUT: Update an existing room allocation with row locking and overlap validation
 @room_allocation_bp.route("/<int:allocation_id>", methods=["PUT"], strict_slashes=False)
+@warden_required
 def update_room_allocation(allocation_id):
     connection = None
     cursor = None
@@ -463,6 +559,7 @@ def update_room_allocation(allocation_id):
 
 # DELETE: Remove an allocation
 @room_allocation_bp.route("/<int:allocation_id>", methods=["DELETE"], strict_slashes=False)
+@warden_required
 def delete_room_allocation(allocation_id):
     connection = None
     cursor = None

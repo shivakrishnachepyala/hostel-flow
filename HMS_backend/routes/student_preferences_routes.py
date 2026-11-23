@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from db import get_db_connection
 from routes.route_utils import format_row, handle_db_error
+from services.auth_service import warden_required
 
 student_preferences_bp = Blueprint(
     "student_preferences",
@@ -12,6 +13,7 @@ student_preferences_bp = Blueprint(
 # GET: Retrieve all student preferences or filter by student_id
 @student_preferences_bp.route("/", methods=["GET"], strict_slashes=False)
 @student_preferences_bp.route("", methods=["GET"], strict_slashes=False)
+@warden_required
 def get_student_preferences():
     connection = None
     cursor = None
@@ -22,19 +24,19 @@ def get_student_preferences():
         connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
 
+        query = """
+            SELECT p.Preference_ID, p.Student_ID, p.Language, p.Food_Preference, p.Sleep_Schedule, p.Study_Habits,
+                   s.Name AS Student_Name, s.Department AS Student_Dept, s.Gender AS Student_Gender
+            FROM student_preferences p
+            LEFT JOIN student s ON p.Student_ID = s.Student_ID
+        """
+        params = []
         if student_id is not None:
-            cursor.execute("""
-                SELECT Preference_ID, Student_ID, Language, Food_Preference, Sleep_Schedule, Study_Habits
-                FROM student_preferences
-                WHERE Student_ID = %s
-                ORDER BY Preference_ID
-            """, (student_id,))
-        else:
-            cursor.execute("""
-                SELECT Preference_ID, Student_ID, Language, Food_Preference, Sleep_Schedule, Study_Habits
-                FROM student_preferences
-                ORDER BY Preference_ID
-            """)
+            query += " WHERE p.Student_ID = %s"
+            params.append(student_id)
+        query += " ORDER BY p.Preference_ID"
+
+        cursor.execute(query, tuple(params))
 
         preferences = [format_row(row) for row in cursor.fetchall()]
 
@@ -56,6 +58,7 @@ def get_student_preferences():
 
 # GET: Retrieve single preference by Preference_ID
 @student_preferences_bp.route("/<int:preference_id>", methods=["GET"], strict_slashes=False)
+@warden_required
 def get_student_preference(preference_id):
     connection = None
     cursor = None
@@ -96,6 +99,7 @@ def get_student_preference(preference_id):
 # POST: Create a new student preference record
 @student_preferences_bp.route("/", methods=["POST"], strict_slashes=False)
 @student_preferences_bp.route("", methods=["POST"], strict_slashes=False)
+@warden_required
 def create_student_preference():
     connection = None
     cursor = None
@@ -194,6 +198,7 @@ def create_student_preference():
 
 # PUT: Update an existing student preference record
 @student_preferences_bp.route("/<int:preference_id>", methods=["PUT"], strict_slashes=False)
+@warden_required
 def update_student_preference(preference_id):
     connection = None
     cursor = None
@@ -286,6 +291,7 @@ def update_student_preference(preference_id):
 
 # DELETE: Remove a student preference record
 @student_preferences_bp.route("/<int:preference_id>", methods=["DELETE"], strict_slashes=False)
+@warden_required
 def delete_student_preference(preference_id):
     connection = None
     cursor = None

@@ -2,6 +2,7 @@ import decimal
 from flask import Blueprint, jsonify, request
 from db import get_db_connection
 from routes.route_utils import format_row, handle_db_error, parse_date
+from services.auth_service import warden_required
 
 payment_bp = Blueprint("payment", __name__, url_prefix="/api/payments")
 
@@ -9,6 +10,7 @@ payment_bp = Blueprint("payment", __name__, url_prefix="/api/payments")
 # GET: Retrieve all payments with optional student_id / status filter
 @payment_bp.route("/", methods=["GET"], strict_slashes=False)
 @payment_bp.route("", methods=["GET"], strict_slashes=False)
+@warden_required
 def get_payments():
     connection = None
     cursor = None
@@ -21,25 +23,27 @@ def get_payments():
         cursor = connection.cursor(dictionary=True)
 
         query = """
-            SELECT Payment_ID, Student_ID, Amount, Payment_Date,
-                   Payment_Method, Payment_Status, Payment_Type, Transaction_Reference
-            FROM payment
+            SELECT p.Payment_ID, p.Student_ID, p.Amount, p.Payment_Date,
+                   p.Payment_Method, p.Payment_Status, p.Payment_Type, p.Transaction_Reference,
+                   s.Name AS Student_Name, s.Department AS Student_Dept, s.Email AS Student_Email
+            FROM payment p
+            LEFT JOIN student s ON p.Student_ID = s.Student_ID
         """
         conditions = []
         params = []
 
         if student_id is not None:
-            conditions.append("Student_ID = %s")
+            conditions.append("p.Student_ID = %s")
             params.append(student_id)
 
         if status:
-            conditions.append("Payment_Status = %s")
+            conditions.append("p.Payment_Status = %s")
             params.append(status.strip())
 
         if conditions:
             query += " WHERE " + " AND ".join(conditions)
 
-        query += " ORDER BY Payment_ID"
+        query += " ORDER BY p.Payment_ID"
 
         cursor.execute(query, tuple(params))
         payments = [format_row(row) for row in cursor.fetchall()]
@@ -62,6 +66,7 @@ def get_payments():
 
 # GET: Retrieve single payment by ID
 @payment_bp.route("/<int:payment_id>", methods=["GET"], strict_slashes=False)
+@warden_required
 def get_payment(payment_id):
     connection = None
     cursor = None
@@ -103,6 +108,7 @@ def get_payment(payment_id):
 # POST: Create a new payment
 @payment_bp.route("/", methods=["POST"], strict_slashes=False)
 @payment_bp.route("", methods=["POST"], strict_slashes=False)
+@warden_required
 def create_payment():
     connection = None
     cursor = None
@@ -231,6 +237,7 @@ def create_payment():
 
 # PUT: Update an existing payment
 @payment_bp.route("/<int:payment_id>", methods=["PUT"], strict_slashes=False)
+@warden_required
 def update_payment(payment_id):
     connection = None
     cursor = None
@@ -357,6 +364,7 @@ def update_payment(payment_id):
 
 # DELETE: Remove a payment
 @payment_bp.route("/<int:payment_id>", methods=["DELETE"], strict_slashes=False)
+@warden_required
 def delete_payment(payment_id):
     connection = None
     cursor = None

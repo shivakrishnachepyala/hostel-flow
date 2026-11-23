@@ -47,30 +47,25 @@ def handle_db_error(error, operation="performing operation"):
         if errno == 1062:
             return jsonify({
                 "status": "error",
-                "message": "Duplicate entry: a record with the same unique value or ID already exists.",
-                "details": msg
+                "message": "Duplicate entry: a record with the same unique value or ID already exists."
             }), 409
         if errno == 1451:
             return jsonify({
                 "status": "error",
-                "message": "Cannot delete or update record because it is referenced by other records.",
-                "details": msg
+                "message": "Cannot delete or update record because it is referenced by other records."
             }), 409
         if errno == 1452:
             return jsonify({
                 "status": "error",
-                "message": "Foreign key constraint violation: referenced record does not exist.",
-                "details": msg
+                "message": "Foreign key constraint violation: referenced record does not exist."
             }), 409
         if errno in (3819, 4025):
             return jsonify({
                 "status": "error",
-                "message": f"Database constraint violation: {msg}",
-                "details": msg
+                "message": "Database constraint violation: invalid value provided."
             }), 400
 
     return jsonify({
         "status": "error",
-        "message": f"Database error while {operation}.",
-        "details": str(error)
+        "message": f"Database error while {operation}."
     }), 500
