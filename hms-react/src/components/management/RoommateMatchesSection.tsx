@@ -104,7 +104,7 @@ export const RoommateMatchesSection: React.FC<RoommateMatchesSectionProps> = ({
       }
     } catch (err: any) {
       console.error('Failed to fetch roommate matches:', err);
-      setErrorMessage(err.response?.data?.message || 'Failed to load roommate matches.');
+      setErrorMessage(err.message || 'Failed to load roommate matches.');
     } finally {
       setLoading(false);
     }
@@ -138,7 +138,7 @@ export const RoommateMatchesSection: React.FC<RoommateMatchesSectionProps> = ({
       }
     } catch (err: any) {
       console.error('Error running roommate matching engine:', err);
-      setErrorMessage(err.response?.data?.message || 'Failed to run roommate matching engine.');
+      setErrorMessage(err.message || 'Failed to run roommate matching engine.');
     } finally {
       setGenerating(false);
     }
@@ -162,7 +162,7 @@ export const RoommateMatchesSection: React.FC<RoommateMatchesSectionProps> = ({
         if (onRefresh) onRefresh();
       }
     } catch (err: any) {
-      setErrorMessage(err.response?.data?.message || 'Failed to approve match.');
+      setErrorMessage(err.message || 'Failed to approve match.');
     } finally {
       setActionLoading(null);
     }
@@ -186,7 +186,7 @@ export const RoommateMatchesSection: React.FC<RoommateMatchesSectionProps> = ({
         if (onRefresh) onRefresh();
       }
     } catch (err: any) {
-      setErrorMessage(err.response?.data?.message || 'Failed to reject match.');
+      setErrorMessage(err.message || 'Failed to reject match.');
     } finally {
       setActionLoading(null);
     }
@@ -211,7 +211,7 @@ export const RoommateMatchesSection: React.FC<RoommateMatchesSectionProps> = ({
         if (onRefresh) onRefresh();
       }
     } catch (err: any) {
-      setErrorMessage(err.response?.data?.message || 'Failed to delete match.');
+      setErrorMessage(err.message || 'Failed to delete match.');
     } finally {
       setActionLoading(null);
     }
@@ -248,7 +248,7 @@ export const RoommateMatchesSection: React.FC<RoommateMatchesSectionProps> = ({
         if (onRefresh) onRefresh();
       }
     } catch (err: any) {
-      setErrorMessage(err.response?.data?.message || 'Failed to create manual match.');
+      setErrorMessage(err.message || 'Failed to create manual match.');
     } finally {
       setManualLoading(false);
     }
@@ -300,7 +300,7 @@ export const RoommateMatchesSection: React.FC<RoommateMatchesSectionProps> = ({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#111827] border border-slate-200 dark:border-[#334155] p-5 rounded-2xl shadow-xs">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-sm shadow-indigo-500/20">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-sm shadow-indigo-500/20">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
@@ -339,7 +339,7 @@ export const RoommateMatchesSection: React.FC<RoommateMatchesSectionProps> = ({
           <button
             onClick={handleGenerateMatches}
             disabled={generating}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-linear-to-r from-indigo-600 via-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/20 transition-all disabled:opacity-50 active:scale-98"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 via-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/20 transition-all disabled:opacity-50 active:scale-98"
           >
             {generating ? (
               <>

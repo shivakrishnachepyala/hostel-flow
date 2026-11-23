@@ -1,4 +1,5 @@
 import os
+import re
 import click
 from flask import Flask, jsonify
 from flask_cors import CORS
@@ -23,13 +24,27 @@ app = Flask(__name__)
 app.config.from_object(Config)
 
 # Configure CORS with strictly configured frontend origins (No wildcards in production)
+# Supports Vercel preview deployments, ngrok tunnels, and local development
 CORS(
     app,
-    resources={r"/api/*": {"origins": Config.CORS_ORIGINS}},
+    resources={r"/api/*": {
+        "origins": [
+            *Config.CORS_ORIGINS,
+            re.compile(r"^https:\/\/.*\.vercel\.app$"),
+            re.compile(r"^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$")
+        ]
+    }},
     supports_credentials=True,
-    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization", "Accept", "X-CSRF-Token", "X-Requested-With", "ngrok-skip-browser-warning"],
-    expose_headers=["X-CSRF-Token"],
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=[
+        "Content-Type",
+        "Authorization",
+        "Accept",
+        "X-CSRF-Token",
+        "X-Requested-With",
+        "ngrok-skip-browser-warning"
+    ],
+    expose_headers=["X-CSRF-Token", "Authorization"],
     max_age=3600
 )
 

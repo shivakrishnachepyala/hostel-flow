@@ -26,13 +26,18 @@ export default function App() {
               <Route path="/" element={<Layout />}>
                 <Route index element={<HomePage />} />
                 <Route path="explorer" element={<ExplorerPage />} />
+                <Route path="explore" element={<ExplorerPage />} />
                 <Route path="availability" element={<AvailabilityPage />} />
                 <Route path="guest-accommodation" element={<GuestPage />} />
+                <Route path="guest" element={<GuestPage />} />
+                <Route path="guest-stay" element={<GuestPage />} />
                 <Route path="enrollment" element={<EnrollmentPage />} />
+                <Route path="enroll" element={<EnrollmentPage />} />
                 <Route path="contact" element={<ContactPage />} />
                 
                 {/* Student Portal Routes */}
                 <Route path="student/login" element={<StudentLoginPage />} />
+                <Route path="student" element={<StudentLoginPage />} />
                 <Route
                   path="student/portal"
                   element={
@@ -44,8 +49,18 @@ export default function App() {
 
                 {/* Management / Staff Portal Routes */}
                 <Route path="management/login" element={<ManagementLoginPage />} />
+                <Route path="warden/login" element={<ManagementLoginPage />} />
+                <Route path="warden" element={<ManagementLoginPage />} />
                 <Route
                   path="management/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <ManagementDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="warden/management"
                   element={
                     <ProtectedRoute>
                       <ManagementDashboard />

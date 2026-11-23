@@ -171,7 +171,7 @@ export const PaymentsSection: React.FC<PaymentsSectionProps> = ({
             <div className="text-2xl font-black font-display text-slate-900 dark:text-[#F1F5F9]">
               {payments.length}
             </div>
-            <div className="text-[11px] text-slate-400 dark:text-[#94A3B8] mt-0.5">Recorded in database</div>
+            <div className="text-[11px] text-slate-400 dark:text-[#94A3B8] mt-0.5">Total processed</div>
           </div>
           <div className="w-11 h-11 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
             <FileText className="w-5 h-5" />

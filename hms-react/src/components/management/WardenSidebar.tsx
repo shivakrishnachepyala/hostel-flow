@@ -271,31 +271,21 @@ export const WardenSidebar: React.FC<WardenSidebarProps> = ({
           </div>
         </nav>
 
-        {/* Sidebar Footer with Status Card */}
+        {/* Sidebar Footer */}
         <div className="p-3 border-t border-white/10 dark:border-[#334155]">
           {!isCollapsed ? (
-            <div className="bg-white/5 dark:bg-[#111827]/80 border border-white/10 dark:border-[#334155] rounded-xl p-3">
-              <div className="flex items-center gap-2 text-xs font-semibold text-slate-200 dark:text-[#F1F5F9]">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span>Warden Mode</span>
-              </div>
-              <div className="text-[11px] text-slate-400 dark:text-[#94A3B8] mt-1 flex items-center gap-1">
-                <Shield className="w-3 h-3 text-sky-400" />
-                <span>MySQL Live Database</span>
+            <div className="bg-white/5 dark:bg-[#111827]/80 border border-white/10 dark:border-[#334155] rounded-xl p-2.5">
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-300 dark:text-[#F1F5F9]">
+                <Shield className="w-3.5 h-3.5 text-sky-400" />
+                <span>HostelFlow Admin</span>
               </div>
             </div>
           ) : (
             <div 
               className="flex justify-center p-2 rounded-xl bg-white/5 dark:bg-[#111827]/80 border border-white/10 dark:border-[#334155]"
-              title="Warden Mode • MySQL Live Database"
+              title="HostelFlow Admin"
             >
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-              </span>
+              <Shield className="w-3.5 h-3.5 text-sky-400" />
             </div>
           )}
         </div>

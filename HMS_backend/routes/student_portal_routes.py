@@ -5,7 +5,7 @@ from flask import Blueprint, jsonify, request, g, make_response
 from config import Config
 from db import get_db_connection
 from routes.route_utils import format_row, handle_db_error, parse_date
-from services.auth_service import hash_password
+from services.auth_service import hash_password, is_origin_allowed
 from services.student_auth_service import (
     authenticate_student,
     invalidate_student_session,
@@ -216,13 +216,11 @@ def login():
 
     # Origin check
     req_origin = request.headers.get("Origin")
-    if req_origin:
-        allowed = [o.rstrip("/") for o in Config.CORS_ORIGINS]
-        if req_origin.rstrip("/") not in allowed:
-            return jsonify({
-                "status": "error",
-                "message": "Cross-Origin login request rejected."
-            }), 403
+    if req_origin and not is_origin_allowed(req_origin):
+        return jsonify({
+            "status": "error",
+            "message": "Cross-Origin login request rejected."
+        }), 403
 
     # Check rate limit
     allowed, retry_after, reason = check_login_rate_limit(client_ip, str(identifier))
@@ -248,10 +246,13 @@ def login():
 
     csrf_token = generate_student_csrf_token(student["Student_ID"])
 
+    # Dual-channel auth response: provide token in JSON for external / mobile devices
     response_data = {
         "status": "success",
         "message": "Login successful.",
         "student": student,
+        "token": token,
+        "access_token": token,
         "csrf_token": csrf_token
     }
 
@@ -324,11 +325,19 @@ def logout():
 def get_current_student_profile():
     """Returns the authenticated student session and refreshes CSRF token."""
     csrf_token = generate_student_csrf_token(g.current_student["Student_ID"])
-    response = make_response(jsonify({
+    auth_header = request.headers.get("Authorization")
+    token = auth_header.split(" ", 1)[1].strip() if auth_header and auth_header.startswith("Bearer ") else request.cookies.get("student_access_token")
+
+    response_body = {
         "status": "success",
         "student": g.current_student,
         "csrf_token": csrf_token
-    }), 200)
+    }
+    if token:
+        response_body["token"] = token
+        response_body["access_token"] = token
+
+    response = make_response(jsonify(response_body), 200)
 
     response.set_cookie(
         "student_csrf_token",

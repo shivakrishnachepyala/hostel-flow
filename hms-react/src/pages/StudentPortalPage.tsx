@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   Building2, 
   Home, 
@@ -18,12 +19,12 @@ import {
   Bed, 
   Users, 
   ShieldCheck, 
-  Activity,
   ArrowRight
 } from 'lucide-react';
 import { useStudentAuth } from '../context/StudentAuthContext';
 import { apiClient } from '../services/apiClient';
 import { ThemeToggle } from '../components/common/ThemeToggle';
+import { DatabaseStatusBadge } from '../components/common/DatabaseStatusBadge';
 
 export const StudentPortalPage: React.FC = () => {
   const { student, logout, networkStatus } = useStudentAuth();
@@ -325,29 +326,24 @@ export const StudentPortalPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-2.5 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end">
-              {/* Network Connectivity Badge */}
-              {networkStatus === 'connected' ? (
-                <div
-                  className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-950/60 text-emerald-300 border border-emerald-800/80"
-                  title="Directly connected to live MySQL 8.4 database"
-                >
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>Live Database</span>
-                </div>
-              ) : networkStatus === 'error' ? (
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-950/60 text-rose-300 border border-rose-800/80">
-                  <span className="w-2 h-2 rounded-full bg-rose-500" />
-                  <span>Backend Offline</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-white/10 text-slate-300">
-                  <Activity className="w-3.5 h-3.5 animate-spin" />
-                  <span>Checking...</span>
-                </div>
-              )}
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end flex-wrap">
+              {/* Exactly ONE Database Status Indicator for Student Portal */}
+              <DatabaseStatusBadge 
+                status={networkStatus} 
+                onRetry={handleRefresh} 
+                compactOnMobile={true} 
+              />
 
-              <ThemeToggle className="bg-white/10 dark:bg-[#1E293B] text-white" />
+              {/* Exactly ONE Theme Toggle */}
+              <ThemeToggle className="bg-white/10 hover:bg-white/15 border border-white/20 text-white dark:bg-[#1E293B] dark:border-[#334155]" />
+
+              {/* Campus Home Link */}
+              <Link
+                to="/"
+                className="hidden md:inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white dark:bg-[#1E293B] dark:border-[#334155] dark:text-[#94A3B8] dark:hover:text-[#F1F5F9] transition-colors"
+              >
+                <span>Campus Home</span>
+              </Link>
 
               <button
                 onClick={handleRefresh}

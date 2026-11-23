@@ -5,11 +5,9 @@ import {
   Lock, 
   User, 
   AlertCircle, 
-  ArrowRight,
-  Activity
+  ArrowRight
 } from 'lucide-react';
 import { useStudentAuth } from '../context/StudentAuthContext';
-import { ThemeToggle } from '../components/common/ThemeToggle';
 
 export const StudentLoginPage: React.FC = () => {
   const [identifier, setIdentifier] = useState('');
@@ -44,11 +42,7 @@ export const StudentLoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-slate-50/50 dark:bg-[#0B1120] transition-colors duration-200 relative">
-      <div className="absolute top-4 right-4 sm:top-6 sm:right-8">
-        <ThemeToggle />
-      </div>
-
+    <div className="min-h-[85vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-slate-50/50 dark:bg-[#0B1120] transition-colors duration-200">
       <div className="max-w-md w-full space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
@@ -61,26 +55,6 @@ export const StudentLoginPage: React.FC = () => {
           <p className="text-xs sm:text-sm text-slate-500 dark:text-[#94A3B8] max-w-xs mx-auto">
             Log in to manage your hostel room, mess subscriptions, payments, and campus tickets.
           </p>
-
-          {/* Network Health Status */}
-          <div className="pt-2 flex justify-center">
-            {networkStatus === 'connected' ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                Backend Connected • Live Database
-              </span>
-            ) : networkStatus === 'error' ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60">
-                <span className="w-2 h-2 rounded-full bg-rose-500" />
-                Backend Temporarily Unreachable
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-[#1E293B] text-slate-600 dark:text-[#94A3B8] border border-slate-200 dark:border-[#334155]">
-                <Activity className="w-3.5 h-3.5 animate-spin" />
-                Verifying Backend Connection...
-              </span>
-            )}
-          </div>
         </div>
 
         {/* Card */}
@@ -102,6 +76,8 @@ export const StudentLoginPage: React.FC = () => {
                   <User className="w-4 h-4" />
                 </div>
                 <input
+                  id="student-identifier"
+                  name="identifier"
                   type="text"
                   required
                   value={identifier}
@@ -121,6 +97,8 @@ export const StudentLoginPage: React.FC = () => {
                   <Lock className="w-4 h-4" />
                 </div>
                 <input
+                  id="student-password"
+                  name="password"
                   type="password"
                   required
                   value={password}

@@ -192,16 +192,9 @@ export const AvailabilityPage: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      {/* 1. Header & Live Indicator */}
+      {/* 1. Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-[#334155]">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Live Database Records</span>
-            </span>
-            <span className="text-xs text-slate-500 dark:text-[#94A3B8] font-medium">Authoritative MySQL hms</span>
-          </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold font-display text-slate-900 dark:text-[#F1F5F9] tracking-tight">
             Hostel Room & Bed Availability
           </h1>
@@ -231,14 +224,14 @@ export const AvailabilityPage: React.FC = () => {
       </div>
 
       {/* 2. Error / Offline Banner */}
-      {error ? (
+      {error && (
         <div className="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-xl text-xs text-rose-800 dark:text-rose-300 flex items-start justify-between gap-3">
           <div className="flex items-start gap-2.5">
             <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" />
             <div>
-              <span className="font-bold">Live database connectivity is temporarily interrupted.</span>
+              <span className="font-bold">Room availability is temporarily unavailable.</span>
               <p className="mt-0.5 text-rose-700 dark:text-rose-400">
-                The application could not reach the Flask backend at <code className="font-mono bg-rose-100/60 dark:bg-rose-900/40 px-1 py-0.5 rounded">/api/hostels/</code>. Please check backend server status.
+                The application could not reach the backend service. Please check your connection and retry.
               </p>
             </div>
           </div>
@@ -248,24 +241,6 @@ export const AvailabilityPage: React.FC = () => {
           >
             Retry
           </button>
-        </div>
-      ) : (
-        <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 rounded-xl text-xs text-emerald-900 dark:text-emerald-200 flex items-center justify-between">
-          <div className="flex items-start gap-3">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <span className="font-bold">
-                Live Data: Authoritative MySQL Database Records
-              </span>
-              <p className="mt-0.5 text-slate-600 dark:text-[#94A3B8]">
-                Records fetched directly from local MySQL <code className="font-mono bg-emerald-100/60 dark:bg-emerald-900/40 px-1 py-0.2 rounded">hms</code> database via the Flask REST API.
-              </p>
-            </div>
-          </div>
-          <span className="hidden md:inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Zero Mock Data</span>
-          </span>
         </div>
       )}
 

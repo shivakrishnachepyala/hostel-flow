@@ -5,9 +5,12 @@ import { Footer } from './Footer';
 
 export const Layout: React.FC = () => {
   const location = useLocation();
-  const isWarden = location.pathname.startsWith('/management/dashboard');
+  const isPortal =
+    location.pathname.startsWith('/management/dashboard') ||
+    location.pathname.startsWith('/warden/management') ||
+    location.pathname.startsWith('/student/portal');
 
-  if (isWarden) {
+  if (isPortal) {
     return <Outlet />;
   }
 

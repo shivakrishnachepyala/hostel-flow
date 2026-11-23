@@ -122,7 +122,7 @@ def create_payment():
                 "message": "A valid JSON object is required."
             }), 400
 
-        required_fields = ["Payment_ID", "Student_ID", "Amount"]
+        required_fields = ["Student_ID", "Amount"]
         for field in required_fields:
             if field not in data or data[field] is None:
                 return jsonify({
@@ -130,15 +130,16 @@ def create_payment():
                     "message": f"{field} is required."
                 }), 400
 
-        payment_id = data["Payment_ID"]
+        payment_id = data.get("Payment_ID")
         student_id = data["Student_ID"]
         raw_amount = data["Amount"]
 
-        if isinstance(payment_id, bool) or not isinstance(payment_id, int) or payment_id <= 0:
-            return jsonify({
-                "status": "error",
-                "message": "Payment_ID must be a positive integer."
-            }), 400
+        if payment_id is not None:
+            if isinstance(payment_id, bool) or not isinstance(payment_id, int) or payment_id <= 0:
+                return jsonify({
+                    "status": "error",
+                    "message": "Payment_ID must be a positive integer."
+                }), 400
 
         if isinstance(student_id, bool) or not isinstance(student_id, int) or student_id <= 0:
             return jsonify({
@@ -175,13 +176,17 @@ def create_payment():
         connection = get_db_connection()
         cursor = connection.cursor()
 
-        # Check primary key existence
-        cursor.execute("SELECT Payment_ID FROM payment WHERE Payment_ID = %s", (payment_id,))
-        if cursor.fetchone():
-            return jsonify({
-                "status": "error",
-                "message": f"Payment with Payment_ID {payment_id} already exists."
-            }), 409
+        # Check primary key existence or generate next
+        if payment_id is None:
+            cursor.execute("SELECT COALESCE(MAX(Payment_ID), 0) + 1 FROM payment")
+            payment_id = cursor.fetchone()[0]
+        else:
+            cursor.execute("SELECT Payment_ID FROM payment WHERE Payment_ID = %s", (payment_id,))
+            if cursor.fetchone():
+                return jsonify({
+                    "status": "error",
+                    "message": f"Payment with Payment_ID {payment_id} already exists."
+                }), 409
 
         # Verify Student exists
         cursor.execute("SELECT Student_ID FROM student WHERE Student_ID = %s", (student_id,))
@@ -220,6 +225,7 @@ def create_payment():
         return jsonify({
             "status": "success",
             "message": "Payment created successfully.",
+            "data": {"Payment_ID": payment_id},
             "Payment_ID": payment_id
         }), 201
 

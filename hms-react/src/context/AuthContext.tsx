@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { apiClient, setCsrfToken } from '../services/apiClient';
+import { apiClient, setCsrfToken, setAuthToken } from '../services/apiClient';
 
 export interface WardenUser {
   Warden_ID: number;
@@ -34,20 +34,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           status: string;
           warden: WardenUser;
           csrf_token?: string;
+          token?: string;
+          access_token?: string;
         }>('/auth/me');
 
         if (isMounted && response.data?.status === 'success' && response.data.warden) {
           setWarden(response.data.warden);
+          const token = response.data.token || response.data.access_token;
+          if (token) {
+            setAuthToken(token);
+          }
           if (response.data.csrf_token) {
             setCsrfToken(response.data.csrf_token);
           }
         } else if (isMounted) {
           setWarden(null);
+          setAuthToken(null);
           setCsrfToken(null);
         }
       } catch {
         if (isMounted) {
           setWarden(null);
+          setAuthToken(null);
           setCsrfToken(null);
         }
       } finally {
@@ -69,10 +77,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       status: string;
       warden: WardenUser;
       csrf_token?: string;
+      token?: string;
+      access_token?: string;
     }>('/auth/login', { username, password });
 
     if (response.data?.status === 'success' && response.data.warden) {
       setWarden(response.data.warden);
+      const token = response.data.token || response.data.access_token;
+      if (token) {
+        setAuthToken(token);
+      }
       if (response.data.csrf_token) {
         setCsrfToken(response.data.csrf_token);
       }
@@ -87,6 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {
       // Ignore network errors on logout to allow clean local exit
     } finally {
+      setAuthToken(null);
       setCsrfToken(null);
       setWarden(null);
     }

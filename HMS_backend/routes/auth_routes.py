@@ -1,11 +1,13 @@
 import os
+import urllib.parse
 from flask import Blueprint, jsonify, request, g, make_response
 from config import Config
 from services.auth_service import (
     authenticate_warden,
     invalidate_warden_session,
     warden_required,
-    generate_csrf_token
+    generate_csrf_token,
+    is_origin_allowed
 )
 from services.rate_limiter import (
     check_login_rate_limit,
@@ -42,13 +44,11 @@ def login():
 
     # 3. Origin check (prevent cross-origin login CSRF / credentials abuse)
     req_origin = request.headers.get("Origin")
-    if req_origin:
-        allowed = [o.rstrip("/") for o in Config.CORS_ORIGINS]
-        if req_origin.rstrip("/") not in allowed:
-            return jsonify({
-                "status": "error",
-                "message": "Cross-Origin login request rejected."
-            }), 403
+    if req_origin and not is_origin_allowed(req_origin):
+        return jsonify({
+            "status": "error",
+            "message": "Cross-Origin login request rejected."
+        }), 403
 
     # 4. Check rate limits (both IP-based and Username-based)
     allowed, retry_after, reason = check_login_rate_limit(client_ip, username)
@@ -77,11 +77,14 @@ def login():
     # 7. Generate CSRF token for the session
     csrf_token = generate_csrf_token(warden["Warden_ID"])
 
-    # Notice: token is completely removed from the JSON payload (HttpOnly cookie exclusive)
+    # Dual-channel auth response: provide token in JSON for cross-site / external clients
+    # while preserving HttpOnly cookie for same-site security
     response_data = {
         "status": "success",
         "message": "Login successful.",
         "warden": warden,
+        "token": token,
+        "access_token": token,
         "csrf_token": csrf_token
     }
 
@@ -153,11 +156,19 @@ def logout():
 @warden_required
 def get_current_warden():
     csrf_token = generate_csrf_token(g.current_warden["Warden_ID"])
-    response = make_response(jsonify({
+    auth_header = request.headers.get("Authorization")
+    token = auth_header.split(" ", 1)[1].strip() if auth_header and auth_header.startswith("Bearer ") else request.cookies.get("access_token")
+
+    response_data = {
         "status": "success",
         "warden": g.current_warden,
         "csrf_token": csrf_token
-    }), 200)
+    }
+    if token:
+        response_data["token"] = token
+        response_data["access_token"] = token
+
+    response = make_response(jsonify(response_data), 200)
 
     # Refresh the csrf_token cookie on session restoration
     response.set_cookie(

@@ -224,7 +224,7 @@ def create_room_allocation():
                 "message": "A valid JSON object is required."
             }), 400
 
-        required_fields = ["Allocation_ID", "Student_ID", "Room_ID", "Bed_ID", "Allocation_Date", "Start_Date"]
+        required_fields = ["Student_ID", "Room_ID", "Bed_ID", "Allocation_Date", "Start_Date"]
         for field in required_fields:
             if field not in data or data[field] is None:
                 return jsonify({
@@ -232,18 +232,21 @@ def create_room_allocation():
                     "message": f"{field} is required."
                 }), 400
 
-        alloc_id = data["Allocation_ID"]
+        alloc_id = data.get("Allocation_ID")
         student_id = data["Student_ID"]
         room_id = data["Room_ID"]
         bed_id = data["Bed_ID"]
 
-        for field_name, val in [("Allocation_ID", alloc_id), ("Student_ID", student_id),
-                                ("Room_ID", room_id), ("Bed_ID", bed_id)]:
+        for field_name, val in [("Student_ID", student_id), ("Room_ID", room_id), ("Bed_ID", bed_id)]:
             if isinstance(val, bool) or not isinstance(val, int) or val <= 0:
                 return jsonify({
                     "status": "error",
                     "message": f"{field_name} must be a positive integer."
                 }), 400
+
+        if alloc_id is not None:
+            if isinstance(alloc_id, bool) or not isinstance(alloc_id, int) or alloc_id <= 0:
+                alloc_id = None
 
         alloc_date, err = parse_date(data["Allocation_Date"], "Allocation_Date")
         if err:
@@ -272,14 +275,19 @@ def create_room_allocation():
         connection.start_transaction()
         cursor = connection.cursor(dictionary=True)
 
-        # Check primary key existence
-        cursor.execute("SELECT Allocation_ID FROM room_allocation WHERE Allocation_ID = %s", (alloc_id,))
-        if cursor.fetchone():
-            connection.rollback()
-            return jsonify({
-                "status": "error",
-                "message": f"Room allocation with Allocation_ID {alloc_id} already exists."
-            }), 409
+        # Assign next Allocation_ID if not provided, or check primary key existence
+        if alloc_id is None:
+            cursor.execute("SELECT COALESCE(MAX(Allocation_ID), 0) + 1 AS next_id FROM room_allocation FOR UPDATE")
+            row = cursor.fetchone()
+            alloc_id = row["next_id"] if row else 1
+        else:
+            cursor.execute("SELECT Allocation_ID FROM room_allocation WHERE Allocation_ID = %s", (alloc_id,))
+            if cursor.fetchone():
+                connection.rollback()
+                return jsonify({
+                    "status": "error",
+                    "message": f"Room allocation with Allocation_ID {alloc_id} already exists."
+                }), 409
 
         # Verify Student exists
         cursor.execute("SELECT Student_ID FROM student WHERE Student_ID = %s", (student_id,))
@@ -354,6 +362,10 @@ def create_room_allocation():
             end_date,
             status
         ))
+
+        # Synchronize Bed_Status
+        if status == 'Active':
+            cursor.execute("UPDATE bed SET Bed_Status = 'Occupied' WHERE Bed_ID = %s", (bed_id,))
 
         connection.commit()
 
@@ -537,6 +549,24 @@ def update_room_allocation(allocation_id):
         values = list(updates.values()) + [allocation_id]
 
         cursor.execute(f"UPDATE room_allocation SET {set_clause} WHERE Allocation_ID = %s", values)
+
+        # Synchronize Bed_Status for target bed and previous bed
+        old_bed_id = existing["Bed_ID"]
+        old_status = existing["Allocation_Status"]
+        new_status = updates.get("Allocation_Status", old_status)
+
+        if new_status == 'Active':
+            cursor.execute("UPDATE bed SET Bed_Status = 'Occupied' WHERE Bed_ID = %s", (new_bed_id,))
+        else:
+            cursor.execute("SELECT COUNT(*) AS active_count FROM room_allocation WHERE Bed_ID = %s AND Allocation_Status = 'Active'", (new_bed_id,))
+            if cursor.fetchone()["active_count"] == 0:
+                cursor.execute("UPDATE bed SET Bed_Status = 'Available' WHERE Bed_ID = %s", (new_bed_id,))
+
+        if old_bed_id != new_bed_id:
+            cursor.execute("SELECT COUNT(*) AS active_count FROM room_allocation WHERE Bed_ID = %s AND Allocation_Status = 'Active'", (old_bed_id,))
+            if cursor.fetchone()["active_count"] == 0:
+                cursor.execute("UPDATE bed SET Bed_Status = 'Available' WHERE Bed_ID = %s", (old_bed_id,))
+
         connection.commit()
 
         return jsonify({
@@ -568,14 +598,25 @@ def delete_room_allocation(allocation_id):
         connection = get_db_connection()
         cursor = connection.cursor()
 
-        cursor.execute("SELECT Allocation_ID FROM room_allocation WHERE Allocation_ID = %s", (allocation_id,))
-        if cursor.fetchone() is None:
+        cursor.execute("SELECT Allocation_ID, Bed_ID FROM room_allocation WHERE Allocation_ID = %s", (allocation_id,))
+        existing_alloc = cursor.fetchone()
+        if existing_alloc is None:
             return jsonify({
                 "status": "error",
                 "message": "Room allocation not found."
             }), 404
 
+        bed_id_to_sync = existing_alloc[1] if isinstance(existing_alloc, (list, tuple)) else existing_alloc["Bed_ID"]
+
         cursor.execute("DELETE FROM room_allocation WHERE Allocation_ID = %s", (allocation_id,))
+
+        # Synchronize Bed_Status
+        cursor.execute("SELECT COUNT(*) FROM room_allocation WHERE Bed_ID = %s AND Allocation_Status = 'Active'", (bed_id_to_sync,))
+        active_count_res = cursor.fetchone()
+        active_count = active_count_res[0] if isinstance(active_count_res, (list, tuple)) else active_count_res["COUNT(*)"]
+        if active_count == 0:
+            cursor.execute("UPDATE bed SET Bed_Status = 'Available' WHERE Bed_ID = %s", (bed_id_to_sync,))
+
         connection.commit()
 
         return jsonify({

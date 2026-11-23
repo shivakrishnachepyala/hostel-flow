@@ -8,7 +8,7 @@ from functools import wraps
 from flask import request, jsonify, g
 from config import Config
 from db import get_db_connection
-from services.auth_service import hash_password, verify_password
+from services.auth_service import hash_password, verify_password, is_origin_allowed
 
 
 def generate_student_csrf_token(student_id: int) -> str:
@@ -285,15 +285,14 @@ def student_required(fn):
             if token_source == "cookie" and request.method in ("POST", "PUT", "DELETE", "PATCH"):
                 req_origin = request.headers.get("Origin")
                 if req_origin:
-                    allowed = [o.rstrip("/") for o in Config.CORS_ORIGINS]
-                    if req_origin.rstrip("/") not in allowed:
+                    if not is_origin_allowed(req_origin):
                         return jsonify({
                             "status": "error",
                             "message": "Cross-Origin request blocked. Origin not permitted."
                         }), 403
                 elif request.headers.get("Referer"):
                     referer = request.headers.get("Referer")
-                    if not any(referer.startswith(o) for o in Config.CORS_ORIGINS):
+                    if not is_origin_allowed(referer):
                         return jsonify({
                             "status": "error",
                             "message": "Referer header verification failed."

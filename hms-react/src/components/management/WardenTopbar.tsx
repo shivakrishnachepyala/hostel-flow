@@ -1,8 +1,10 @@
-import React from 'react';
-import { Menu, LogOut, ExternalLink, Database } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Menu, LogOut, ExternalLink } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { apiClient } from '../../services/apiClient';
 import { ThemeToggle } from '../common/ThemeToggle';
+import { DatabaseStatusBadge, DbStatus } from '../common/DatabaseStatusBadge';
 
 interface WardenTopbarProps {
   pageTitle: string;
@@ -15,6 +17,26 @@ export const WardenTopbar: React.FC<WardenTopbarProps> = ({
 }) => {
   const { warden, logout } = useAuth();
   const navigate = useNavigate();
+  const [dbStatus, setDbStatus] = useState<DbStatus>('checking');
+
+  const checkHealth = () => {
+    setDbStatus('checking');
+    apiClient.get('/health')
+      .then((res) => {
+        if (res.data?.status === 'success' || res.data?.status === 'ok' || res.data?.status === 'healthy') {
+          setDbStatus('connected');
+        } else {
+          setDbStatus('error');
+        }
+      })
+      .catch(() => {
+        setDbStatus('error');
+      });
+  };
+
+  useEffect(() => {
+    checkHealth();
+  }, []);
 
   const handleSignOut = async () => {
     await logout();
@@ -53,20 +75,13 @@ export const WardenTopbar: React.FC<WardenTopbarProps> = ({
         </div>
       </div>
 
-      {/* Right section: Theme Toggle, DB pill, Portal switch, Profile, Sign out */}
+      {/* Right section: DB Status, Theme Toggle, Portal switch, Profile, Sign out */}
       <div className="flex items-center gap-2.5 sm:gap-3.5">
+        {/* Exactly ONE Database Connection Indicator for Warden Portal */}
+        <DatabaseStatusBadge status={dbStatus} onRetry={checkHealth} compactOnMobile={true} />
+
         {/* Global Dark / Light Theme Toggle */}
         <ThemeToggle />
-
-        {/* Status Pill */}
-        <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80 shadow-2xs">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-          </span>
-          <Database className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-          <span>MySQL Live (hms)</span>
-        </div>
 
         {/* Portal Switcher Button */}
         <Link

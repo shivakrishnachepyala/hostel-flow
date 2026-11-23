@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { ThemeToggle } from '../components/common/ThemeToggle';
 
 export const ManagementLoginPage: React.FC = () => {
   const [staffId, setStaffId] = useState('');
@@ -38,11 +37,7 @@ export const ManagementLoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-16rem)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-slate-50/50 dark:bg-[#0B1120] transition-colors duration-200 relative">
-      <div className="absolute top-4 right-4 sm:top-6 sm:right-8">
-        <ThemeToggle />
-      </div>
-
+    <div className="min-h-[calc(100vh-16rem)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-slate-50/50 dark:bg-[#0B1120] transition-colors duration-200">
       <div className="max-w-md w-full space-y-8 bg-white dark:bg-[#111827] border border-slate-200 dark:border-[#334155] p-8 rounded-2xl shadow-sm transition-colors duration-200">
         <div className="text-center space-y-2">
           <div className="w-12 h-12 bg-institutional-800 dark:bg-sky-600 text-white rounded-2xl flex items-center justify-center mx-auto shadow-sm">
@@ -64,10 +59,12 @@ export const ManagementLoginPage: React.FC = () => {
 
         <form onSubmit={handleLogin} className="space-y-4 text-xs">
           <div>
-            <label className="block text-slate-700 dark:text-[#94A3B8] font-semibold mb-1">
+            <label htmlFor="staff-username" className="block text-slate-700 dark:text-[#94A3B8] font-semibold mb-1">
               Staff Identifier / Username
             </label>
             <input
+              id="staff-username"
+              name="username"
               type="text"
               required
               autoFocus
@@ -80,11 +77,13 @@ export const ManagementLoginPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-slate-700 dark:text-[#94A3B8] font-semibold mb-1">
+            <label htmlFor="staff-password" className="block text-slate-700 dark:text-[#94A3B8] font-semibold mb-1">
               Access Password
             </label>
             <div className="relative">
               <input
+                id="staff-password"
+                name="password"
                 type={showPassword ? 'text' : 'password'}
                 required
                 autoComplete="current-password"

@@ -173,7 +173,7 @@ export const ManagementModules: React.FC<ModulesProps> = ({
   // 7. Visitor & Guest Stay Management
   // =========================================================================
   if (tab === 'guests') {
-    return <GuestManagementSection rooms={rooms} />;
+    return <GuestManagementSection rooms={rooms} onRefresh={onRefresh} />;
   }
 
   // =========================================================================

@@ -3,12 +3,35 @@ import time
 import secrets
 import hmac
 import hashlib
+import urllib.parse
 import bcrypt
 import jwt
 from functools import wraps
 from flask import request, jsonify, g
 from config import Config
 from db import get_db_connection
+
+
+def is_origin_allowed(origin: str) -> bool:
+    """Validate whether the incoming request Origin or Referer is permitted."""
+    if not origin:
+        return True
+    norm_origin = origin.rstrip("/")
+    allowed_list = [o.rstrip("/") for o in Config.CORS_ORIGINS]
+    if norm_origin in allowed_list:
+        return True
+    # Allow Vercel deployments
+    if (norm_origin.startswith("https://") or norm_origin.startswith("http://")) and ".vercel.app" in norm_origin:
+        return True
+    # Allow local network dev testing
+    try:
+        parsed = urllib.parse.urlparse(norm_origin)
+        host = parsed.hostname or ""
+        if host in ("localhost", "127.0.0.1") or host.startswith("192.168.") or host.startswith("10."):
+            return True
+    except Exception:
+        pass
+    return False
 
 
 def generate_csrf_token(warden_id: int) -> str:
@@ -322,15 +345,14 @@ def warden_required(fn):
                 # 1. Origin and Referer validation
                 req_origin = request.headers.get("Origin")
                 if req_origin:
-                    allowed = [o.rstrip("/") for o in Config.CORS_ORIGINS]
-                    if req_origin.rstrip("/") not in allowed:
+                    if not is_origin_allowed(req_origin):
                         return jsonify({
                             "status": "error",
                             "message": "Cross-Origin request blocked. Origin not permitted."
                         }), 403
                 elif request.headers.get("Referer"):
                     referer = request.headers.get("Referer")
-                    if not any(referer.startswith(o) for o in Config.CORS_ORIGINS):
+                    if not is_origin_allowed(referer):
                         return jsonify({
                             "status": "error",
                             "message": "Referer header verification failed."

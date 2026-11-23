@@ -26,13 +26,13 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = '', showLa
       className={`inline-flex items-center justify-center gap-2 p-2 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer select-none active:scale-95 focus:outline-none focus:ring-2 focus:ring-sky-500/50 ${
         isDark
           ? 'bg-[#1E293B] text-amber-400 hover:bg-[#182235] hover:text-amber-300 border border-[#334155] shadow-xs'
-          : 'bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900 border border-slate-200 shadow-2xs'
+          : 'bg-slate-100 text-slate-800 hover:bg-slate-200 hover:text-slate-900 border border-slate-300 shadow-2xs'
       } ${className}`}
     >
       {isDark ? (
-        <Sun className="w-4 h-4 transition-transform duration-300 rotate-0 hover:rotate-45 text-amber-400" />
+        <Sun className="w-4 h-4 transition-transform duration-300 rotate-0 hover:rotate-45 text-amber-400" fill="currentColor" />
       ) : (
-        <Moon className="w-4 h-4 transition-transform duration-300 rotate-0 hover:-rotate-12 text-slate-700" />
+        <Moon className="w-4 h-4 transition-transform duration-300 rotate-0 hover:-rotate-12" fill="currentColor" stroke="currentColor" strokeWidth={1.5} />
       )}
       {showLabel && (
         <span className="font-medium text-xs">

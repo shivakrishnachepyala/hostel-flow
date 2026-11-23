@@ -88,17 +88,17 @@ export const HomePage: React.FC = () => {
       { 
         label: 'Hostel Buildings', 
         value: isLiveConnected ? `${dbHostels.length} Active` : '—', 
-        sub: isLiveConnected ? `${dbBlocks.length} Residential Blocks` : 'Checking MySQL...' 
+        sub: isLiveConnected ? `${dbBlocks.length} Residential Blocks` : 'Residential Blocks' 
       },
       { 
         label: 'Configured Beds', 
         value: isLiveConnected ? `${totalBedsCount}` : '—', 
-        sub: isLiveConnected ? `${dbRooms.length} Registered Units` : 'Live Inventory' 
+        sub: isLiveConnected ? `${dbRooms.length} Registered Units` : 'Bed Inventory' 
       },
       { 
         label: 'Live Vacancies', 
         value: isLiveConnected ? (vacantBedsCount > 0 ? `${vacantBedsCount} Free` : 'Currently Full') : '—', 
-        sub: isLiveConnected && totalBedsCount > 0 ? `${Math.round((vacantBedsCount / totalBedsCount) * 100)}% Available Now` : 'Verified Database' 
+        sub: isLiveConnected && totalBedsCount > 0 ? `${Math.round((vacantBedsCount / totalBedsCount) * 100)}% Available Now` : 'Campus Capacity' 
       },
       { 
         label: 'Active Leases', 
@@ -166,12 +166,6 @@ export const HomePage: React.FC = () => {
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>Next-Generation Campus Living</span>
                 </div>
-                {isLiveConnected && (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold tracking-wide">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
-                    <span>Live Availability</span>
-                  </div>
-                )}
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold font-display tracking-tight leading-tight text-slate-900 dark:text-white">

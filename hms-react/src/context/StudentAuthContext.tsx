@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { apiClient, setCsrfToken } from '../services/apiClient';
+import { apiClient, setCsrfToken, setStudentAuthToken } from '../services/apiClient';
 
 export interface StudentUser {
   Student_ID: number;
@@ -57,19 +57,27 @@ export const StudentAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
           status: string;
           student: StudentUser;
           csrf_token?: string;
+          token?: string;
+          access_token?: string;
         }>('/student/auth/me');
 
         if (isMounted && response.data?.status === 'success' && response.data.student) {
           setStudent(response.data.student);
+          const token = response.data.token || response.data.access_token;
+          if (token) {
+            setStudentAuthToken(token);
+          }
           if (response.data.csrf_token) {
             setCsrfToken(response.data.csrf_token);
           }
         } else if (isMounted) {
           setStudent(null);
+          setStudentAuthToken(null);
         }
       } catch {
         if (isMounted) {
           setStudent(null);
+          setStudentAuthToken(null);
         }
       } finally {
         if (isMounted) {
@@ -90,10 +98,16 @@ export const StudentAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       status: string;
       student: StudentUser;
       csrf_token?: string;
+      token?: string;
+      access_token?: string;
     }>('/student/auth/login', { identifier, password });
 
     if (response.data?.status === 'success' && response.data.student) {
       setStudent(response.data.student);
+      const token = response.data.token || response.data.access_token;
+      if (token) {
+        setStudentAuthToken(token);
+      }
       if (response.data.csrf_token) {
         setCsrfToken(response.data.csrf_token);
       }
@@ -109,6 +123,7 @@ export const StudentAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     } catch {
       // Ignore network errors on logout to allow clean local state teardown
     } finally {
+      setStudentAuthToken(null);
       setStudent(null);
     }
   };

@@ -1,17 +1,70 @@
 import axios from 'axios';
 
-// In-memory CSRF token storage (no sessionStorage / localStorage persistence)
+// In-memory token storage (with resilient sessionStorage fallback across page reloads)
+let inMemoryWardenToken: string | null = null;
+let inMemoryStudentToken: string | null = null;
 let inMemoryCsrfToken: string | null = null;
+
+if (typeof window !== 'undefined') {
+  try {
+    inMemoryWardenToken = sessionStorage.getItem('hostelflow_auth_token');
+    inMemoryStudentToken = sessionStorage.getItem('hostelflow_student_token');
+    inMemoryCsrfToken = sessionStorage.getItem('hostelflow_csrf_token');
+  } catch {
+    // Graceful fallback if storage is restricted in embedded webviews
+  }
+}
+
+export const setAuthToken = (token: string | null) => {
+  inMemoryWardenToken = token;
+  if (typeof window !== 'undefined') {
+    try {
+      if (token) {
+        sessionStorage.setItem('hostelflow_auth_token', token);
+      } else {
+        sessionStorage.removeItem('hostelflow_auth_token');
+      }
+    } catch {
+      // ignore
+    }
+  }
+};
+
+export const getAuthToken = () => inMemoryWardenToken;
+
+export const setStudentAuthToken = (token: string | null) => {
+  inMemoryStudentToken = token;
+  if (typeof window !== 'undefined') {
+    try {
+      if (token) {
+        sessionStorage.setItem('hostelflow_student_token', token);
+      } else {
+        sessionStorage.removeItem('hostelflow_student_token');
+      }
+    } catch {
+      // ignore
+    }
+  }
+};
+
+export const getStudentAuthToken = () => inMemoryStudentToken;
 
 export const setCsrfToken = (token: string | null) => {
   inMemoryCsrfToken = token;
+  if (typeof window !== 'undefined') {
+    try {
+      if (token) {
+        sessionStorage.setItem('hostelflow_csrf_token', token);
+      } else {
+        sessionStorage.removeItem('hostelflow_csrf_token');
+      }
+    } catch {
+      // ignore
+    }
+  }
 };
 
 export const getCsrfToken = () => inMemoryCsrfToken;
-
-// Backwards compatibility stubs for legacy imports (no sessionStorage usage)
-export const setAuthToken = (_token: string | null) => {};
-export const getAuthToken = () => null;
 
 function getCookie(name: string): string | null {
   if (typeof document === 'undefined') return null;
@@ -28,13 +81,26 @@ export const apiClient = axios.create({
   withCredentials: true,
 });
 
-// Request interceptor: attach anti-CSRF token and request headers
+// Request interceptor: attach dual-channel Authorization bearer & anti-CSRF token
 apiClient.interceptors.request.use((config) => {
   if (config.headers) {
     config.headers['X-Requested-With'] = 'XMLHttpRequest';
     config.headers['ngrok-skip-browser-warning'] = 'true';
 
-    const csrf = inMemoryCsrfToken || getCookie('csrf_token');
+    // Route-aware dual-channel token selection:
+    // When accessing /student endpoints, preferentially attach student JWT
+    // For management, warden, allocations, and administrative endpoints, attach warden JWT
+    const url = config.url || '';
+    const isStudentRoute = url.startsWith('/student') || url.startsWith('student');
+    const token = isStudentRoute
+      ? (inMemoryStudentToken || inMemoryWardenToken)
+      : (inMemoryWardenToken || inMemoryStudentToken);
+
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const csrf = inMemoryCsrfToken || getCookie('csrf_token') || getCookie('student_csrf_token');
     if (csrf) {
       config.headers['X-CSRF-Token'] = csrf;
     }
@@ -42,7 +108,7 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor to format errors gracefully
+// Response interceptor to format errors gracefully and sync updated tokens
 apiClient.interceptors.response.use(
   (response) => {
     // If backend returns a refreshed csrf_token, keep it in memory
@@ -57,6 +123,9 @@ apiClient.interceptors.response.use(
       error.response?.data?.error ||
       error.message ||
       'An unexpected error occurred with the hostel backend';
-    return Promise.reject(new Error(errorMsg));
+    const err = new Error(errorMsg) as any;
+    err.response = error.response;
+    err.status = error.response?.status;
+    return Promise.reject(err);
   }
 );

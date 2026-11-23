@@ -6,16 +6,15 @@ import {
   CheckCircle2, 
   Users, 
   FileText, 
-  HelpCircle, 
   Lock, 
   Menu, 
   X,
-  Activity,
   GraduationCap
 } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import { useStudentAuth } from '../../context/StudentAuthContext';
 import { ThemeToggle } from '../common/ThemeToggle';
+import { DatabaseStatusBadge } from '../common/DatabaseStatusBadge';
 
 export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -23,23 +22,23 @@ export const Navbar: React.FC = () => {
   const location = useLocation();
   const { student } = useStudentAuth();
 
-  useEffect(() => {
-    let mounted = true;
+  const checkHealth = () => {
+    setDbStatus('checking');
     apiClient.get('/health')
       .then((res) => {
-        if (mounted && (res.data?.status === 'success' || res.data?.status === 'ok' || res.data?.status === 'healthy')) {
+        if (res.data?.status === 'success' || res.data?.status === 'ok' || res.data?.status === 'healthy') {
           setDbStatus('connected');
-        } else if (mounted) {
+        } else {
           setDbStatus('error');
         }
       })
       .catch(() => {
-        if (mounted) setDbStatus('error');
+        setDbStatus('error');
       });
+  };
 
-    return () => {
-      mounted = false;
-    };
+  useEffect(() => {
+    checkHealth();
   }, []);
 
   const navLinks = [
@@ -48,7 +47,6 @@ export const Navbar: React.FC = () => {
     { label: 'Room Availability', path: '/availability', icon: CheckCircle2 },
     { label: 'Guest Stay', path: '/guest-accommodation', icon: Users },
     { label: 'Enrollment', path: '/enrollment', icon: FileText },
-    { label: 'Contact', path: '/contact', icon: HelpCircle },
   ];
 
   const isActive = (path: string) => {
@@ -102,37 +100,13 @@ export const Navbar: React.FC = () => {
             })}
           </nav>
 
-          {/* Desktop Right Action: Theme Toggle, DB Status, Student Portal & Management Portal */}
-          <div className="hidden lg:flex items-center gap-2.5">
+          {/* Desktop Right Action: Database Status, Theme Toggle, Student Portal & Management Portal */}
+          <div className="hidden lg:flex items-center gap-3">
+            {/* Database Connection Indicator */}
+            <DatabaseStatusBadge status={dbStatus} onRetry={checkHealth} />
+
             {/* Theme Toggle (Sun/Moon) */}
             <ThemeToggle />
-
-            {/* Live Availability Verified Indicator */}
-            {dbStatus === 'connected' ? (
-              <div
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/80"
-                title="Verified Live Availability from MySQL 8.4 database"
-              >
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Live DB</span>
-              </div>
-            ) : dbStatus === 'error' ? (
-              <div
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-900/60"
-                title="Backend API connection is currently unavailable"
-              >
-                <span className="w-2 h-2 rounded-full bg-rose-500" />
-                <span>DB Offline</span>
-              </div>
-            ) : (
-              <div
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-slate-50 dark:bg-[#1E293B] text-slate-500 dark:text-[#94A3B8] border-slate-200 dark:border-[#334155]"
-                title="Verifying database connection..."
-              >
-                <Activity className="w-3 h-3 animate-pulse" />
-                <span>Checking...</span>
-              </div>
-            )}
 
             {/* Student Portal Action Button */}
             {student ? (
@@ -163,8 +137,9 @@ export const Navbar: React.FC = () => {
             </Link>
           </div>
 
-          {/* Mobile header controls: Exactly ONE ThemeToggle and the Menu toggle */}
+          {/* Mobile header controls: Exactly ONE DatabaseStatusBadge, ONE ThemeToggle and the Menu toggle */}
           <div className="flex lg:hidden items-center gap-2">
+            <DatabaseStatusBadge status={dbStatus} onRetry={checkHealth} compactOnMobile={true} />
             <ThemeToggle />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

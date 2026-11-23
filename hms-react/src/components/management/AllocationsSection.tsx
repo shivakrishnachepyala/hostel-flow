@@ -103,13 +103,23 @@ export const AllocationsSection: React.FC<AllocationsSectionProps> = ({
   });
 
   const openCreateModal = () => {
-    const nextId = allocations.length > 0 ? Math.max(...allocations.map(a => a.Allocation_ID)) + 1 : 1;
-    const defaultRoomId = rooms[0]?.Room_ID || 1;
-    const availableBedInRoom = beds.find(b => b.Room_ID === defaultRoomId && b.Bed_Status === 'Available') || beds[0];
+    const maxExisting = allocations.length > 0 ? Math.max(...allocations.map(a => a.Allocation_ID)) : 0;
+    const nextId = maxExisting > 0 ? maxExisting + 1 : 1;
+
+    // Prefer room and bed that are actually available
+    const roomWithAvailableBed = rooms.find(r => beds.some(b => b.Room_ID === r.Room_ID && b.Bed_Status === 'Available'));
+    const defaultRoomId = roomWithAvailableBed ? roomWithAvailableBed.Room_ID : (rooms[0]?.Room_ID || 1);
+    const availableBedInRoom = beds.find(b => b.Room_ID === defaultRoomId && b.Bed_Status === 'Available') 
+      || beds.find(b => b.Room_ID === defaultRoomId) 
+      || beds[0];
+
+    // Find student not already actively allocated if possible
+    const unallocatedStudent = students.find(s => !allocations.some(a => a.Student_ID === s.Student_ID && a.Allocation_Status === 'Active'));
+    const defaultStudentId = unallocatedStudent ? unallocatedStudent.Student_ID : (students[0]?.Student_ID || 1);
 
     setFormData({
       Allocation_ID: nextId,
-      Student_ID: students[0]?.Student_ID || 1,
+      Student_ID: defaultStudentId,
       Room_ID: defaultRoomId,
       Bed_ID: availableBedInRoom ? availableBedInRoom.Bed_ID : 1,
       Allocation_Date: new Date().toISOString().split('T')[0],
@@ -145,7 +155,8 @@ export const AllocationsSection: React.FC<AllocationsSectionProps> = ({
 
   const handleRoomChange = (newRoomId: number) => {
     const bedsInNewRoom = beds.filter(b => b.Room_ID === newRoomId);
-    const firstBed = bedsInNewRoom[0]?.Bed_ID || formData.Bed_ID;
+    const availableBed = bedsInNewRoom.find(b => b.Bed_Status === 'Available');
+    const firstBed = availableBed ? availableBed.Bed_ID : (bedsInNewRoom[0]?.Bed_ID || formData.Bed_ID);
     setFormData({
       ...formData,
       Room_ID: newRoomId,
@@ -158,7 +169,12 @@ export const AllocationsSection: React.FC<AllocationsSectionProps> = ({
     setIsSubmitting(true);
     try {
       if (modalMode === 'create') {
-        await apiClient.post('/room-allocations/', formData);
+        const payload = { ...formData };
+        // If Allocation_ID is empty, 0, or collided with an existing one, delete it so backend auto-assigns next ID atomically
+        if (!payload.Allocation_ID || payload.Allocation_ID <= 0 || allocations.some(a => a.Allocation_ID === payload.Allocation_ID)) {
+          delete (payload as any).Allocation_ID;
+        }
+        await apiClient.post('/room-allocations/', payload);
         showSuccess('Room allocation registered successfully.');
       } else {
         await apiClient.put(`/room-allocations/${editingId}`, formData);
@@ -513,13 +529,15 @@ export const AllocationsSection: React.FC<AllocationsSectionProps> = ({
             <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
               {modalMode === 'create' && (
                 <div>
-                  <label className="block font-semibold mb-1 text-slate-700 dark:text-[#94A3B8]">Allocation ID *</label>
+                  <label className="block font-semibold mb-1 text-slate-700 dark:text-[#94A3B8]">
+                    Allocation ID <span className="text-[11px] font-normal text-slate-400 dark:text-[#64748B]">(Optional - Auto-assigned)</span>
+                  </label>
                   <input
                     type="number"
-                    value={formData.Allocation_ID}
+                    value={formData.Allocation_ID || ''}
+                    placeholder="Auto-assigned"
                     onChange={e => setFormData({ ...formData, Allocation_ID: parseInt(e.target.value) || 0 })}
                     className="w-full p-2.5 border border-slate-200 dark:border-[#334155] rounded-xl bg-slate-50 dark:bg-[#182235] text-slate-900 dark:text-[#F1F5F9] focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    required
                   />
                   <p className="text-[10px] text-slate-400 dark:text-[#94A3B8] mt-1">Unique primary key in the MySQL room_allocation table.</p>
                 </div>
@@ -533,11 +551,14 @@ export const AllocationsSection: React.FC<AllocationsSectionProps> = ({
                   className="w-full p-2.5 border border-slate-200 dark:border-[#334155] rounded-xl bg-slate-50 dark:bg-[#182235] text-slate-900 dark:text-[#F1F5F9] focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   required
                 >
-                  {students.map(s => (
-                    <option key={s.Student_ID} value={s.Student_ID}>
-                      {s.Name} (#{s.Student_ID} · {s.Department || 'Student'})
-                    </option>
-                  ))}
+                  {students.map(s => {
+                    const isAllocated = allocations.some(a => a.Student_ID === s.Student_ID && a.Allocation_Status === 'Active');
+                    return (
+                      <option key={s.Student_ID} value={s.Student_ID}>
+                        {s.Name} (#{s.Student_ID} · {s.Department || 'Student'}) {isAllocated ? '· [Currently Allocated]' : '· [Unallocated]'}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
@@ -549,11 +570,15 @@ export const AllocationsSection: React.FC<AllocationsSectionProps> = ({
                   className="w-full p-2.5 border border-slate-200 dark:border-[#334155] rounded-xl bg-slate-50 dark:bg-[#182235] text-slate-900 dark:text-[#F1F5F9] focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   required
                 >
-                  {rooms.map(r => (
-                    <option key={r.Room_ID} value={r.Room_ID}>
-                      Room {r.Room_Number} ({r.Block_Name || 'Block'}, {r.Room_Type || 'Double'})
-                    </option>
-                  ))}
+                  {rooms.map(r => {
+                    const roomBeds = beds.filter(b => b.Room_ID === r.Room_ID);
+                    const availCount = roomBeds.filter(b => b.Bed_Status === 'Available').length;
+                    return (
+                      <option key={r.Room_ID} value={r.Room_ID}>
+                        Room {r.Room_Number} ({r.Block_Name || 'Block'}, {r.Room_Type || 'Double'}) — {availCount} available
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
@@ -569,7 +594,7 @@ export const AllocationsSection: React.FC<AllocationsSectionProps> = ({
                     .filter(b => b.Room_ID === formData.Room_ID)
                     .map(b => (
                       <option key={b.Bed_ID} value={b.Bed_ID}>
-                        {b.Bed_Number} (Status: {b.Bed_Status || 'Available'})
+                        Bed {b.Bed_Number} (Status: {b.Bed_Status || 'Available'}) {b.Bed_Status === 'Available' ? '✓' : '⚠️'}
                       </option>
                     ))}
                 </select>

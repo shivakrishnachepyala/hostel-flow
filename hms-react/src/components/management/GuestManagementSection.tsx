@@ -34,9 +34,10 @@ import { apiClient } from '../../services/apiClient';
 
 interface GuestManagementSectionProps {
   rooms?: Room[];
+  onRefresh?: () => void;
 }
 
-export const GuestManagementSection: React.FC<GuestManagementSectionProps> = () => {
+export const GuestManagementSection: React.FC<GuestManagementSectionProps> = ({ onRefresh }) => {
   // Data state
   const [guests, setGuests] = useState<GuestStay[]>([]);
   const [stats, setStats] = useState<GuestStats>({
@@ -152,6 +153,7 @@ export const GuestManagementSection: React.FC<GuestManagementSectionProps> = () 
   const handleRefresh = () => {
     fetchStats();
     fetchGuests();
+    if (onRefresh) onRefresh();
   };
 
   // =========================================================================
@@ -332,7 +334,7 @@ export const GuestManagementSection: React.FC<GuestManagementSectionProps> = () 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#111827] border border-slate-200 dark:border-[#334155] p-5 rounded-2xl shadow-xs">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-linear-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white shadow-sm shadow-emerald-500/20">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white shadow-sm shadow-emerald-500/20">
               <Hotel className="w-5 h-5" />
             </div>
             <div>

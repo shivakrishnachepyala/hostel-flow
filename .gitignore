@@ -26,3 +26,9 @@ Thumbs.db
 /hms-frontend/
 /src/
 /hms-frontend.zip
+
+# Audit scratch files and local verification screenshots
+/HMS_backend/test_warden_actions_audit.py
+/HMS_backend/test_full_warden_actions.py
+/HMS_backend/full_warden_audit_results.json
+/roommate_matches_*.png

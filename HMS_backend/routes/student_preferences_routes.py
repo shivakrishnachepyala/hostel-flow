@@ -113,7 +113,7 @@ def create_student_preference():
                 "message": "A valid JSON object is required."
             }), 400
 
-        required_fields = ["Preference_ID", "Student_ID"]
+        required_fields = ["Student_ID"]
         for field in required_fields:
             if field not in data or data[field] is None:
                 return jsonify({
@@ -121,14 +121,15 @@ def create_student_preference():
                     "message": f"{field} is required."
                 }), 400
 
-        pref_id = data["Preference_ID"]
+        pref_id = data.get("Preference_ID")
         student_id = data["Student_ID"]
 
-        if isinstance(pref_id, bool) or not isinstance(pref_id, int) or pref_id <= 0:
-            return jsonify({
-                "status": "error",
-                "message": "Preference_ID must be a positive integer."
-            }), 400
+        if pref_id is not None:
+            if isinstance(pref_id, bool) or not isinstance(pref_id, int) or pref_id <= 0:
+                return jsonify({
+                    "status": "error",
+                    "message": "Preference_ID must be a positive integer."
+                }), 400
 
         if isinstance(student_id, bool) or not isinstance(student_id, int) or student_id <= 0:
             return jsonify({
@@ -139,13 +140,17 @@ def create_student_preference():
         connection = get_db_connection()
         cursor = connection.cursor()
 
-        # Check primary key
-        cursor.execute("SELECT Preference_ID FROM student_preferences WHERE Preference_ID = %s", (pref_id,))
-        if cursor.fetchone():
-            return jsonify({
-                "status": "error",
-                "message": f"Preference record with Preference_ID {pref_id} already exists."
-            }), 409
+        # Check primary key or generate next
+        if pref_id is None:
+            cursor.execute("SELECT COALESCE(MAX(Preference_ID), 0) + 1 FROM student_preferences")
+            pref_id = cursor.fetchone()[0]
+        else:
+            cursor.execute("SELECT Preference_ID FROM student_preferences WHERE Preference_ID = %s", (pref_id,))
+            if cursor.fetchone():
+                return jsonify({
+                    "status": "error",
+                    "message": f"Preference record with Preference_ID {pref_id} already exists."
+                }), 409
 
         # Check if student exists
         cursor.execute("SELECT Student_ID FROM student WHERE Student_ID = %s", (student_id,))
@@ -181,6 +186,7 @@ def create_student_preference():
         return jsonify({
             "status": "success",
             "message": "Student preference record created successfully.",
+            "data": {"Preference_ID": pref_id},
             "Preference_ID": pref_id
         }), 201
 
