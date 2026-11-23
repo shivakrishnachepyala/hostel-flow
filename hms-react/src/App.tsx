@@ -9,34 +9,55 @@ import { EnrollmentPage } from './pages/EnrollmentPage';
 import { ContactPage } from './pages/ContactPage';
 import { ManagementLoginPage } from './pages/ManagementLoginPage';
 import { ManagementDashboard } from './pages/ManagementDashboard';
+import { StudentLoginPage } from './pages/StudentLoginPage';
+import { StudentPortalPage } from './pages/StudentPortalPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, ProtectedRoute } from './context/AuthContext';
+import { StudentAuthProvider, StudentProtectedRoute } from './context/StudentAuthContext';
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<HomePage />} />
-            <Route path="explorer" element={<ExplorerPage />} />
-            <Route path="availability" element={<AvailabilityPage />} />
-            <Route path="guest-accommodation" element={<GuestPage />} />
-            <Route path="enrollment" element={<EnrollmentPage />} />
-            <Route path="contact" element={<ContactPage />} />
-            <Route path="management/login" element={<ManagementLoginPage />} />
-            <Route
-              path="management/dashboard"
-              element={
-                <ProtectedRoute>
-                  <ManagementDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
-        </Routes>
-      </AuthProvider>
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <StudentAuthProvider>
+            <Routes>
+              <Route path="/" element={<Layout />}>
+                <Route index element={<HomePage />} />
+                <Route path="explorer" element={<ExplorerPage />} />
+                <Route path="availability" element={<AvailabilityPage />} />
+                <Route path="guest-accommodation" element={<GuestPage />} />
+                <Route path="enrollment" element={<EnrollmentPage />} />
+                <Route path="contact" element={<ContactPage />} />
+                
+                {/* Student Portal Routes */}
+                <Route path="student/login" element={<StudentLoginPage />} />
+                <Route
+                  path="student/portal"
+                  element={
+                    <StudentProtectedRoute>
+                      <StudentPortalPage />
+                    </StudentProtectedRoute>
+                  }
+                />
+
+                {/* Management / Staff Portal Routes */}
+                <Route path="management/login" element={<ManagementLoginPage />} />
+                <Route
+                  path="management/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <ManagementDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="*" element={<NotFoundPage />} />
+              </Route>
+            </Routes>
+          </StudentAuthProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }

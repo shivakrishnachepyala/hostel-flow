@@ -25,6 +25,7 @@ const TAB_TITLES: Record<ManagementTab, string> = {
   rooms: 'Room Management',
   beds: 'Bed Management',
   students: 'Student Management',
+  guests: 'Visitor & Guest Stay Management',
   allocation: 'Room Allocation',
   matches: 'Roommate Matching',
   preferences: 'Student Preferences',
@@ -37,6 +38,13 @@ export const ManagementDashboard: React.FC = () => {
   const activeTab: ManagementTab = (rawTab && TAB_TITLES[rawTab]) ? rawTab : 'dashboard';
 
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('hostelflow_sidebar_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [loading, setLoading] = useState(true);
 
   // Authoritative MySQL Entities from Flask
@@ -52,6 +60,16 @@ export const ManagementDashboard: React.FC = () => {
 
   const handleSelectTab = (tab: ManagementTab) => {
     setSearchParams(tab === 'dashboard' ? {} : { tab });
+  };
+
+  const handleToggleSidebar = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('hostelflow_sidebar_collapsed', String(next));
+      } catch {}
+      return next;
+    });
   };
 
   const fetchDatabaseState = useCallback(async () => {
@@ -92,17 +110,19 @@ export const ManagementDashboard: React.FC = () => {
   }, [fetchDatabaseState]);
 
   return (
-    <div className="flex min-h-screen bg-[#F5F7FB] text-slate-800 antialiased font-sans">
-      {/* 1. Left-side Navigation Sidebar (Dark Navy #172554) */}
+    <div className="flex min-h-screen bg-[#F5F7FB] dark:bg-[#0B1120] text-slate-800 dark:text-[#F1F5F9] antialiased font-sans transition-colors duration-200">
+      {/* 1. Left-side Navigation Sidebar */}
       <WardenSidebar
         activeTab={activeTab}
         onSelectTab={handleSelectTab}
         mobileOpen={mobileOpen}
         onCloseMobile={() => setMobileOpen(false)}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={handleToggleSidebar}
       />
 
-      {/* 2. Main Content Area with Light Grey Background */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* 2. Main Content Area smoothly adjusting its width */}
+      <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out">
         <WardenTopbar
           pageTitle={TAB_TITLES[activeTab]}
           onOpenMobileMenu={() => setMobileOpen(true)}
@@ -118,6 +138,7 @@ export const ManagementDashboard: React.FC = () => {
               students={students}
               allocations={allocations}
               payments={payments}
+              matches={matches}
               onNavigateTab={handleSelectTab}
               loading={loading}
             />

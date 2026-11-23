@@ -32,6 +32,7 @@ export const apiClient = axios.create({
 apiClient.interceptors.request.use((config) => {
   if (config.headers) {
     config.headers['X-Requested-With'] = 'XMLHttpRequest';
+    config.headers['ngrok-skip-browser-warning'] = 'true';
 
     const csrf = inMemoryCsrfToken || getCookie('csrf_token');
     if (csrf) {

@@ -10,20 +10,24 @@ import {
   Lock, 
   Menu, 
   X,
-  Activity
+  Activity,
+  GraduationCap
 } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
+import { useStudentAuth } from '../../context/StudentAuthContext';
+import { ThemeToggle } from '../common/ThemeToggle';
 
 export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dbStatus, setDbStatus] = useState<'connected' | 'error' | 'checking'>('checking');
   const location = useLocation();
+  const { student } = useStudentAuth();
 
   useEffect(() => {
     let mounted = true;
     apiClient.get('/health')
       .then((res) => {
-        if (mounted && (res.data?.status === 'success' || res.data?.status === 'ok')) {
+        if (mounted && (res.data?.status === 'success' || res.data?.status === 'ok' || res.data?.status === 'healthy')) {
           setDbStatus('connected');
         } else if (mounted) {
           setDbStatus('error');
@@ -54,19 +58,19 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
+    <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#0B1120]/95 backdrop-blur-md border-b border-slate-200 dark:border-[#334155] transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Brand Logo */}
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-lg bg-institutional-800 text-white flex items-center justify-center font-display font-bold text-xl shadow-sm transition-transform group-hover:scale-105">
+            <div className="w-10 h-10 rounded-lg bg-institutional-800 dark:bg-sky-600 text-white flex items-center justify-center font-display font-bold text-xl shadow-sm transition-transform group-hover:scale-105">
               H
             </div>
             <div>
-              <span className="font-display font-bold text-slate-900 tracking-tight text-lg block leading-tight">
+              <span className="font-display font-bold text-slate-900 dark:text-[#F1F5F9] tracking-tight text-lg block leading-tight">
                 HostelPortal
               </span>
-              <span className="text-[11px] text-slate-500 font-medium block">
+              <span className="text-[11px] text-slate-500 dark:text-[#94A3B8] font-medium block">
                 University Accommodation
               </span>
             </div>
@@ -82,14 +86,14 @@ export const Navbar: React.FC = () => {
                   to={link.path}
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors relative flex items-center gap-1.5 ${
                     active
-                      ? 'text-institutional-700 bg-institutional-50/80 font-semibold'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/60'
+                      ? 'text-institutional-700 dark:text-sky-300 bg-institutional-50/80 dark:bg-[#182235] font-semibold'
+                      : 'text-slate-600 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-[#F1F5F9] hover:bg-slate-100/60 dark:hover:bg-[#182235]/60'
                   }`}
                 >
-                  <link.icon className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
+                  <link.icon className="w-4 h-4 text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300" />
                   <span>{link.label}</span>
                   {link.badge && (
-                    <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-teal-100 text-teal-800 rounded-full">
+                    <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 rounded-full border border-teal-200 dark:border-teal-800">
                       {link.badge}
                     </span>
                   )}
@@ -98,50 +102,73 @@ export const Navbar: React.FC = () => {
             })}
           </nav>
 
-          {/* Right Action: DB Status & Management Portal */}
-          <div className="hidden sm:flex items-center gap-3">
+          {/* Desktop Right Action: Theme Toggle, DB Status, Student Portal & Management Portal */}
+          <div className="hidden lg:flex items-center gap-2.5">
+            {/* Theme Toggle (Sun/Moon) */}
+            <ThemeToggle />
+
             {/* Live Availability Verified Indicator */}
             {dbStatus === 'connected' ? (
               <div
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border bg-emerald-50 text-emerald-800 border-emerald-200"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/80"
                 title="Verified Live Availability from MySQL 8.4 database"
               >
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Live Availability</span>
+                <span>Live DB</span>
               </div>
             ) : dbStatus === 'error' ? (
               <div
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-rose-50 text-rose-700 border-rose-200"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-900/60"
                 title="Backend API connection is currently unavailable"
               >
                 <span className="w-2 h-2 rounded-full bg-rose-500" />
-                <span>Availability Offline</span>
+                <span>DB Offline</span>
               </div>
             ) : (
               <div
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-slate-50 text-slate-500 border-slate-200"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-slate-50 dark:bg-[#1E293B] text-slate-500 dark:text-[#94A3B8] border-slate-200 dark:border-[#334155]"
                 title="Verifying database connection..."
               >
                 <Activity className="w-3 h-3 animate-pulse" />
-                <span>Checking Live DB...</span>
+                <span>Checking...</span>
               </div>
             )}
 
-            {/* Management Portal Button */}
+            {/* Student Portal Action Button */}
+            {student ? (
+              <Link
+                to="/student/portal"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-institutional-800 dark:bg-sky-600 text-white hover:bg-institutional-900 dark:hover:bg-sky-500 shadow-sm transition-colors"
+              >
+                <GraduationCap className="w-3.5 h-3.5 text-institutional-200" />
+                <span>Portal ({student.Name.split(' ')[0]})</span>
+              </Link>
+            ) : (
+              <Link
+                to="/student/portal"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-institutional-50 dark:bg-[#1E293B] text-institutional-800 dark:text-sky-300 hover:bg-institutional-100 dark:hover:bg-[#182235] border border-institutional-200 dark:border-[#334155] transition-colors shadow-2xs"
+              >
+                <GraduationCap className="w-3.5 h-3.5 text-institutional-600 dark:text-sky-400" />
+                <span>Student Portal</span>
+              </Link>
+            )}
+
+            {/* Staff / Management Portal Button */}
             <Link
               to="/management/login"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 shadow-sm transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 dark:border-[#334155] bg-white dark:bg-[#1E293B] text-slate-700 dark:text-[#F1F5F9] hover:bg-slate-50 dark:hover:bg-[#182235] shadow-2xs transition-colors"
             >
-              <Lock className="w-3.5 h-3.5 text-slate-500" />
-              <span>Staff Login</span>
+              <Lock className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+              <span>Staff</span>
             </Link>
           </div>
 
-          {/* Mobile menu button */}
+          {/* Mobile header controls: Exactly ONE ThemeToggle and the Menu toggle */}
           <div className="flex lg:hidden items-center gap-2">
+            <ThemeToggle />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none"
+              className="p-2 rounded-md text-slate-600 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-[#F1F5F9] hover:bg-slate-100 dark:hover:bg-[#182235] focus:outline-none"
               aria-label="Toggle Navigation Menu"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -152,7 +179,7 @@ export const Navbar: React.FC = () => {
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-6 space-y-2">
+        <div className="lg:hidden border-t border-slate-200 dark:border-[#334155] bg-white dark:bg-[#0B1120] px-4 pt-3 pb-6 space-y-2 shadow-lg">
           {navLinks.map((link) => {
             const active = isActive(link.path);
             return (
@@ -162,30 +189,38 @@ export const Navbar: React.FC = () => {
                 onClick={() => setMobileMenuOpen(false)}
                 className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium ${
                   active
-                    ? 'bg-institutional-50 text-institutional-800 font-semibold'
-                    : 'text-slate-700 hover:bg-slate-100'
+                    ? 'bg-institutional-50 dark:bg-[#182235] text-institutional-800 dark:text-sky-300 font-semibold'
+                    : 'text-slate-700 dark:text-[#94A3B8] hover:bg-slate-100 dark:hover:bg-[#182235]'
                 }`}
               >
                 <div className="flex items-center gap-2.5">
-                  <link.icon className="w-4 h-4 text-slate-400" />
+                  <link.icon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                   <span>{link.label}</span>
                 </div>
                 {link.badge && (
-                  <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-teal-100 text-teal-800 rounded-full">
+                  <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 rounded-full">
                     {link.badge}
                   </span>
                 )}
               </Link>
             );
           })}
-          <div className="pt-3 border-t border-slate-100">
+          <div className="pt-3 border-t border-slate-100 dark:border-[#334155] space-y-2">
+            <Link
+              to="/student/portal"
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-institutional-800 dark:bg-sky-600 text-white font-medium text-sm shadow-sm"
+            >
+              <GraduationCap className="w-4 h-4" />
+              <span>{student ? `Student Portal (${student.Name})` : 'Student Portal Login'}</span>
+            </Link>
             <Link
               to="/management/login"
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-institutional-800 text-white font-medium text-sm shadow-sm"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-slate-300 dark:border-[#334155] text-slate-700 dark:text-[#F1F5F9] bg-white dark:bg-[#1E293B] hover:bg-slate-50 dark:hover:bg-[#182235] font-medium text-sm"
             >
               <Lock className="w-4 h-4" />
-              <span>Management & Warden Portal</span>
+              <span>Staff & Warden Portal</span>
             </Link>
           </div>
         </div>

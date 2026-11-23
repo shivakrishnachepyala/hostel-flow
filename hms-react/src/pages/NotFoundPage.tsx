@@ -5,13 +5,13 @@ import { Building2, ArrowLeft } from 'lucide-react';
 export const NotFoundPage: React.FC = () => {
   return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center p-8 text-center space-y-4">
-      <div className="w-12 h-12 rounded-xl bg-slate-200 text-slate-700 flex items-center justify-center font-bold">
+      <div className="w-12 h-12 rounded-xl bg-slate-200 text-slate-700 dark:text-slate-300 flex items-center justify-center font-bold">
         404
       </div>
-      <h1 className="text-2xl font-bold font-display text-slate-900">
+      <h1 className="text-2xl font-bold font-display text-slate-900 dark:text-slate-100">
         Page Not Found
       </h1>
-      <p className="text-xs text-slate-500 max-w-sm">
+      <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm">
         The requested residential portal section does not exist or has been relocated.
       </p>
       <Link

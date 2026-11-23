@@ -2,8 +2,73 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  color-scheme: light;
+  --color-bg-main: #f8fafc;
+  --color-bg-card: #ffffff;
+  --color-bg-elevated: #f1f5f9;
+  --color-bg-input: #f8fafc;
+  --color-bg-input-focus: #ffffff;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94a3b8;
+  --color-border-subtle: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+}
+
+.dark, [data-theme="dark"] {
+  color-scheme: dark;
+  --color-bg-main: #0B1120;
+  --color-bg-card: #111827;
+  --color-bg-elevated: #182235;
+  --color-bg-input: #1E293B;
+  --color-bg-input-focus: #182235;
+  --color-text-primary: #F1F5F9;
+  --color-text-secondary: #94A3B8;
+  --color-text-muted: #64748B;
+  --color-border-subtle: #334155;
+  --color-border-strong: #475569;
+}
+
 @layer base {
   body {
     @apply font-sans;
+  }
+
+  /* Native select dropdown options dark mode support */
+  .dark select option,
+  [data-theme="dark"] select option {
+    background-color: #111827;
+    color: #F1F5F9;
+  }
+
+  select option {
+    background-color: #ffffff;
+    color: #0f172a;
+  }
+
+  /* Date input calendar icon styling */
+  .dark input[type="date"]::-webkit-calendar-picker-indicator,
+  [data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.9) brightness(1.2);
+    cursor: pointer;
+  }
+
+  /* Custom scrollbar styling for consistent theme feel */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-300 dark:bg-slate-700 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-400 dark:bg-slate-600;
   }
 }
