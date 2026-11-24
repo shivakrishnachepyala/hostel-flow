@@ -39,6 +39,16 @@ def get_db_pool():
     return _pool
 
 
+def reset_db_pool():
+    """
+    Resets the singleton connection pool. Useful for test suites switching databases.
+    """
+    global _pool
+    with _pool_lock:
+        _pool = None
+
+
+
 def get_db_connection():
     """
     Acquires a pooled connection from the connection pool.

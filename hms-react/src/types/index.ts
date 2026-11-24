@@ -45,6 +45,7 @@ export interface RoomWithOccupancy extends Room {
   availableBeds: number;
   maintenanceBeds?: number;
   status: 'available' | 'occupied' | 'partially-occupied' | 'fully-occupied' | 'maintenance' | string;
+  beds?: Bed[];
 }
 
 export interface Bed {

@@ -128,7 +128,7 @@ export const ManagementDashboard: React.FC = () => {
           onOpenMobileMenu={() => setMobileOpen(true)}
         />
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className={`flex-1 p-4 sm:p-6 lg:p-8 w-full mx-auto transition-all duration-300 ${activeTab === 'layout' ? 'max-w-[1600px]' : 'max-w-7xl'}`}>
           {activeTab === 'dashboard' ? (
             <DashboardOverview
               hostels={hostels}

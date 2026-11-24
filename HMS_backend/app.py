@@ -18,6 +18,7 @@ from routes.roommate_match_routes import roommate_match_bp
 from routes.payment_routes import payment_bp
 from routes.student_portal_routes import student_portal_bp
 from routes.guest_routes import guest_bp
+from routes.explorer_routes import explorer_bp
 from services.auth_service import provision_warden, warden_required
 
 app = Flask(__name__)
@@ -65,6 +66,7 @@ app.register_blueprint(roommate_match_bp)
 app.register_blueprint(payment_bp)
 app.register_blueprint(student_portal_bp)
 app.register_blueprint(guest_bp)
+app.register_blueprint(explorer_bp)
 
 
 @app.route("/", methods=["GET"])

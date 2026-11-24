@@ -1,154 +1,345 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Text, Grid } from '@react-three/drei';
+import { OrbitControls, Text, Billboard, Grid } from '@react-three/drei';
 import * as THREE from 'three';
+import { DynamicallyPositionedRoom, BuildingBounds, generateDynamicLayout } from '../../utils/explorerLayout';
 import { IllustrativeRoom } from '../../data/illustrativeHostel';
+import { 
+  RotateCcw
+} from 'lucide-react';
 
-interface Building3DProps {
-  rooms: IllustrativeRoom[];
+export type Any3DRoom = DynamicallyPositionedRoom | IllustrativeRoom;
+
+export interface Building3DProps {
+  rooms: Any3DRoom[];
+  bounds?: BuildingBounds;
   selectedFloor: number | 'all';
-  selectedRoom: IllustrativeRoom | null;
-  onSelectRoom: (room: IllustrativeRoom) => void;
+  selectedRoom: Any3DRoom | null;
+  onSelectRoom: (room: any) => void;
   cutawayMode: boolean;
+  onToggleCutaway?: () => void;
+  className?: string;
 }
 
-// Color map for room status
-const getStatusColor = (status: IllustrativeRoom['status']) => {
+// Status color helper for room indicators
+const getStatusTheme = (status: DynamicallyPositionedRoom['status']) => {
   switch (status) {
     case 'available':
-      return '#10b981'; // Green
+      return {
+        accent: '#10b981', // Emerald
+        tileGlow: '#059669',
+        blanket: '#10b981',
+        label: 'Available',
+      };
     case 'partially-occupied':
-      return '#f59e0b'; // Amber
+      return {
+        accent: '#f59e0b', // Amber
+        tileGlow: '#d97706',
+        blanket: '#f59e0b',
+        label: 'Partially Free',
+      };
     case 'fully-occupied':
-      return '#ef4444'; // Red
+      return {
+        accent: '#ef4444', // Rose Red
+        tileGlow: '#dc2626',
+        blanket: '#ef4444',
+        label: 'Occupied',
+      };
     case 'maintenance':
-      return '#64748b'; // Slate
+      return {
+        accent: '#64748b', // Slate
+        tileGlow: '#475569',
+        blanket: '#64748b',
+        label: 'Maintenance',
+      };
     default:
-      return '#10b981';
+      return {
+        accent: '#10b981',
+        tileGlow: '#059669',
+        blanket: '#10b981',
+        label: 'Available',
+      };
   }
 };
 
 interface RoomMeshProps {
-  room: IllustrativeRoom;
+  room: Any3DRoom;
+  floorOffset: number;
   isSelected: boolean;
   isDimmed: boolean;
-  isExploded: boolean;
+  cutawayMode: boolean;
   onClick: () => void;
 }
 
-const RoomMesh: React.FC<RoomMeshProps> = ({ room, isSelected, isDimmed, isExploded, onClick }) => {
+/**
+ * Procedural Room Component
+ * Generates an architectural room unit with walls, doorway, window, furniture,
+ * and stable hitbox. Automatically handles row orientation (South vs North)
+ * so doors always open toward the central corridor spine.
+ */
+const RoomMesh: React.FC<RoomMeshProps> = ({
+  room,
+  floorOffset,
+  isSelected,
+  isDimmed,
+  cutawayMode,
+  onClick,
+}) => {
   const [hovered, setHovered] = useState(false);
-  const baseColor = getStatusColor(room.status);
-  const color = isSelected ? '#38bdf8' : hovered ? '#60a5fa' : baseColor;
-  const opacity = isDimmed ? 0.2 : 0.88;
+  const theme = getStatusTheme(room.status);
 
-  const width = room.dimensions[0];
-  const height = room.dimensions[1];
-  const depth = room.dimensions[2];
+  const [width, height, depth] = room.dimensions;
 
-  // Adjust Y offset if exploded view is enabled
-  const floorOffset = isExploded ? ((room.Floor ?? 1) - 1) * 2.2 : 0;
-  const pos: [number, number, number] = [
-    room.position3D[0],
-    room.position3D[1] + floorOffset,
-    room.position3D[2]
-  ];
+  // Determine row orientation:
+  // South row rooms (Z > 0) face North toward corridor (Z = 0)
+  // North row rooms (Z < 0) face South toward corridor (Z = 0)
+  const isSouth = ('row' in room && room.row === 'south') || (room.position3D[2] > 0);
+
+  // Unified world position including dynamic floor explosion offset
+  const posX = room.position3D[0];
+  const posY = room.position3D[1] + floorOffset;
+  const posZ = room.position3D[2];
+
+  // In cutaway mode, if this room is in the South row and facing front,
+  // we section its exterior wall so the interior is 100% visible
+  const hideExteriorWall = cutawayMode && isSouth;
 
   return (
-    <group position={pos}>
-      {/* 1. Room Floor Tile Finish */}
-      <mesh position={[0, -height / 2 + 0.02, 0]} receiveShadow>
-        <boxGeometry args={[width - 0.08, 0.04, depth - 0.08]} />
-        <meshStandardMaterial color="#cbd5e1" roughness={0.7} />
+    <group
+      position={[posX, posY, posZ]}
+      // Rotating 180 deg around Y for South row ensures:
+      // - Doorway (at local +Z) always faces inward into central corridor
+      // - Window (at local -Z) always faces outward to the exterior
+      rotation={[0, isSouth ? Math.PI : 0, 0]}
+    >
+      {/* 1. Room Floor Tile Finish (Sits flush on top of floor slab) */}
+      <mesh position={[0, -height / 2 + 0.015, 0]} receiveShadow>
+        <boxGeometry args={[width - 0.04, 0.03, depth - 0.04]} />
+        <meshStandardMaterial
+          color={isSelected ? '#38bdf8' : hovered ? '#60a5fa' : '#e2e8f0'}
+          roughness={0.6}
+          metalness={0.05}
+        />
       </mesh>
 
-      {/* 2. Architectural Walls (Cutaway top so interior is visible) */}
-      <mesh position={[-width / 2 + 0.04, 0, 0]}>
-        <boxGeometry args={[0.08, height * 0.9, depth]} />
-        <meshStandardMaterial color="#e2e8f0" roughness={0.8} />
-      </mesh>
-      <mesh position={[width / 2 - 0.04, 0, 0]}>
-        <boxGeometry args={[0.08, height * 0.9, depth]} />
-        <meshStandardMaterial color="#e2e8f0" roughness={0.8} />
-      </mesh>
-      <mesh position={[0, 0, -depth / 2 + 0.04]}>
-        <boxGeometry args={[width, height * 0.9, 0.08]} />
-        <meshStandardMaterial color="#e2e8f0" roughness={0.8} />
+      {/* Decorative Wall Accent Trim Stripe on Floor */}
+      <mesh position={[0, -height / 2 + 0.035, 0]}>
+        <boxGeometry args={[width - 0.08, 0.005, depth - 0.08]} />
+        <meshBasicMaterial
+          color={theme.accent}
+          transparent
+          opacity={isDimmed ? 0.2 : hovered || isSelected ? 0.9 : 0.4}
+        />
       </mesh>
 
-      {/* Window on exterior wall */}
-      <mesh position={[0, 0.2, -depth / 2 + 0.06]}>
-        <boxGeometry args={[width * 0.5, height * 0.45, 0.05]} />
-        <meshStandardMaterial color="#38bdf8" transparent opacity={0.6} />
+      {/* 2. Architectural Walls (Solid, non-coplanar primitives) */}
+      {/* Left Partition Wall (-X) */}
+      <mesh position={[-width / 2 + 0.03, 0.04, 0]} castShadow receiveShadow>
+        <boxGeometry args={[0.06, height * 0.92, depth - 0.08]} />
+        <meshStandardMaterial
+          color={isDimmed ? '#94a3b8' : '#f1f5f9'}
+          roughness={0.8}
+          transparent={isDimmed}
+          opacity={isDimmed ? 0.3 : 1.0}
+        />
       </mesh>
 
-      {/* 3. Detailed Furniture Inside the Room */}
-      {!isDimmed && (
-        <group position={[0, -height / 2, 0]}>
-          {/* Wooden Beds */}
-          {Array.from({ length: Math.min(room.Capacity ?? 0, 3) }).map((_, i) => {
-            const bedWidth = 0.75;
-            const bedLen = 1.45;
-            const xPos = (room.Capacity ?? 0) === 1 ? 0 : (i === 0 ? -width / 2 + 0.55 : width / 2 - 0.55);
-            const isBedOccupied = i < room.occupiedBeds;
-            const bedBlanketColor = room.status === 'maintenance' ? '#64748b' : isBedOccupied ? '#ef4444' : '#10b981';
+      {/* Right Partition Wall (+X) */}
+      <mesh position={[width / 2 - 0.03, 0.04, 0]} castShadow receiveShadow>
+        <boxGeometry args={[0.06, height * 0.92, depth - 0.08]} />
+        <meshStandardMaterial
+          color={isDimmed ? '#94a3b8' : '#f1f5f9'}
+          roughness={0.8}
+          transparent={isDimmed}
+          opacity={isDimmed ? 0.3 : 1.0}
+        />
+      </mesh>
 
-            return (
-              <group key={`bed-${i}`} position={[xPos, 0, -0.1]}>
-                {/* Bed Frame & Headboard */}
-                <mesh position={[0, 0.1, 0]}>
-                  <boxGeometry args={[bedWidth, 0.08, bedLen]} />
-                  <meshStandardMaterial color="#5c3818" roughness={0.7} />
-                </mesh>
-                <mesh position={[0, 0.3, -bedLen / 2 + 0.04]}>
-                  <boxGeometry args={[bedWidth, 0.35, 0.08]} />
-                  <meshStandardMaterial color="#5c3818" roughness={0.7} />
-                </mesh>
-                {/* Mattress */}
-                <mesh position={[0, 0.2, 0]}>
-                  <boxGeometry args={[bedWidth - 0.06, 0.12, bedLen - 0.08]} />
-                  <meshStandardMaterial color="#ffffff" roughness={0.4} />
-                </mesh>
-                {/* Blanket with occupancy status color */}
-                <mesh position={[0, 0.21, bedLen * 0.12]}>
-                  <boxGeometry args={[bedWidth - 0.04, 0.13, bedLen * 0.6]} />
-                  <meshStandardMaterial color={bedBlanketColor} roughness={0.5} />
-                </mesh>
-                {/* Pillow */}
-                <mesh position={[0, 0.28, -bedLen / 2 + 0.22]}>
-                  <boxGeometry args={[bedWidth * 0.65, 0.06, 0.28]} />
-                  <meshStandardMaterial color="#f8fafc" roughness={0.3} />
-                </mesh>
-              </group>
-            );
-          })}
-
-          {/* Study Desk & Chair */}
-          <group position={[-width / 2 + 0.5, 0, depth / 2 - 0.55]}>
-            <mesh position={[0, 0.35, 0]}>
-              <boxGeometry args={[0.75, 0.04, 0.4]} />
-              <meshStandardMaterial color="#854d0e" roughness={0.7} />
-            </mesh>
-            <mesh position={[0, 0.2, 0.25]}>
-              <boxGeometry args={[0.3, 0.03, 0.3]} />
-              <meshStandardMaterial color="#334155" />
-            </mesh>
-            <mesh position={[0, 0.35, 0.38]}>
-              <boxGeometry args={[0.3, 0.24, 0.03]} />
-              <meshStandardMaterial color="#334155" />
-            </mesh>
-          </group>
-
-          {/* Wardrobe Storage Cupboard */}
-          <mesh position={[width / 2 - 0.45, 0.55, depth / 2 - 0.4]}>
-            <boxGeometry args={[0.55, 1.1, 0.35]} />
-            <meshStandardMaterial color="#475569" roughness={0.6} />
+      {/* Exterior Wall & Window (Local -Z, facing exterior) */}
+      {!hideExteriorWall && (
+        <group position={[0, 0, -depth / 2 + 0.04]}>
+          {/* Left wall pillar */}
+          <mesh position={[-width * 0.35, 0.04, 0]} castShadow receiveShadow>
+            <boxGeometry args={[width * 0.3, height * 0.92, 0.08]} />
+            <meshStandardMaterial color={isDimmed ? '#94a3b8' : '#cbd5e1'} roughness={0.7} />
+          </mesh>
+          {/* Right wall pillar */}
+          <mesh position={[width * 0.35, 0.04, 0]} castShadow receiveShadow>
+            <boxGeometry args={[width * 0.3, height * 0.92, 0.08]} />
+            <meshStandardMaterial color={isDimmed ? '#94a3b8' : '#cbd5e1'} roughness={0.7} />
+          </mesh>
+          {/* Wall Sill below Window */}
+          <mesh position={[0, -height * 0.25, 0]} castShadow receiveShadow>
+            <boxGeometry args={[width * 0.42, height * 0.34, 0.08]} />
+            <meshStandardMaterial color={isDimmed ? '#94a3b8' : '#cbd5e1'} roughness={0.7} />
+          </mesh>
+          {/* Wall Lintel above Window */}
+          <mesh position={[0, height * 0.38, 0]} castShadow receiveShadow>
+            <boxGeometry args={[width * 0.42, height * 0.24, 0.08]} />
+            <meshStandardMaterial color={isDimmed ? '#94a3b8' : '#cbd5e1'} roughness={0.7} />
+          </mesh>
+          {/* Architectural Window Glass Pane */}
+          <mesh position={[0, 0.08, 0]}>
+            <boxGeometry args={[width * 0.4, height * 0.38, 0.02]} />
+            <meshPhysicalMaterial
+              color="#38bdf8"
+              transparent
+              opacity={0.5}
+              roughness={0.1}
+              transmission={0.4}
+              thickness={0.02}
+            />
           </mesh>
         </group>
       )}
 
-      {/* 4. Clickable Bounding Volume */}
+      {/* Corridor Wall with Entrance Doorway (Local +Z, facing corridor spine) */}
+      <group position={[0, 0, depth / 2 - 0.04]}>
+        {/* Left wall segment beside doorway */}
+        <mesh position={[-width * 0.22, 0.04, 0]} castShadow receiveShadow>
+          <boxGeometry args={[width * 0.54, height * 0.92, 0.08]} />
+          <meshStandardMaterial color={isDimmed ? '#94a3b8' : '#e2e8f0'} roughness={0.8} />
+        </mesh>
+        {/* Doorway Header Lintel */}
+        <mesh position={[width * 0.25, height * 0.38, 0]} castShadow receiveShadow>
+          <boxGeometry args={[0.54, height * 0.24, 0.08]} />
+          <meshStandardMaterial color={isDimmed ? '#94a3b8' : '#e2e8f0'} roughness={0.8} />
+        </mesh>
+        {/* Slightly Ajar Wooden Door Panel */}
+        <mesh position={[width * 0.12, 0, 0.12]} rotation={[0, -0.45, 0]}>
+          <boxGeometry args={[0.48, height * 0.78, 0.04]} />
+          <meshStandardMaterial color="#78350f" roughness={0.6} />
+        </mesh>
+      </group>
+
+      {/* 3. Detailed Physical Furniture Inside Room */}
+      {!isDimmed && (
+        <group position={[0, -height / 2 + 0.03, 0]}>
+          {/* Physical Wooden Beds with Occupancy Blankets */}
+          {(() => {
+            const rawBeds = 'beds' in room && Array.isArray(room.beds) ? room.beds : undefined;
+            const physicalBeds = rawBeds && rawBeds.length > 0
+              ? rawBeds
+              : Array.from({ length: Math.min(room.Capacity ?? 0, 3) }).map((_, i) => ({
+                  Bed_ID: room.Room_ID * 10 + i + 1,
+                  Bed_Number: String(i + 1),
+                  Bed_Type: 'Single',
+                  Bed_Status: i < (room.occupiedBeds ?? 0) ? 'Occupied' : 'Available',
+                  is_occupied: i < (room.occupiedBeds ?? 0),
+                }));
+
+            const bedCount = physicalBeds.length;
+            const bedWidth = 0.68;
+            const bedLen = 1.35;
+
+            return physicalBeds.map((bed: any, i: number) => {
+              let xPos = 0;
+              if (bedCount === 1) {
+                xPos = 0;
+              } else if (bedCount === 2) {
+                xPos = i === 0 ? -width / 2 + 0.48 : width / 2 - 0.48;
+              } else {
+                xPos = i === 0 ? -width / 2 + 0.48 : i === 1 ? 0 : width / 2 - 0.48;
+              }
+
+              const isBedOccupied = bed.is_occupied || bed.Bed_Status === 'Occupied';
+              const bedBlanketColor = room.status === 'maintenance' || bed.Bed_Status === 'Maintenance'
+                ? '#64748b'
+                : isBedOccupied
+                ? '#ef4444'
+                : '#10b981';
+
+              return (
+                <group key={`bed-${bed.Bed_ID}`} position={[xPos, 0, -0.15]}>
+                  {/* Bed Frame */}
+                  <mesh position={[0, 0.08, 0]} castShadow receiveShadow>
+                    <boxGeometry args={[bedWidth, 0.08, bedLen]} />
+                    <meshStandardMaterial color="#451a03" roughness={0.7} />
+                  </mesh>
+                  {/* Headboard */}
+                  <mesh position={[0, 0.28, -bedLen / 2 + 0.03]} castShadow>
+                    <boxGeometry args={[bedWidth, 0.32, 0.06]} />
+                    <meshStandardMaterial color="#451a03" roughness={0.7} />
+                  </mesh>
+                  {/* Mattress */}
+                  <mesh position={[0, 0.18, 0]}>
+                    <boxGeometry args={[bedWidth - 0.06, 0.12, bedLen - 0.08]} />
+                    <meshStandardMaterial color="#f8fafc" roughness={0.3} />
+                  </mesh>
+                  {/* Blanket with Live Status Color */}
+                  <mesh position={[0, 0.19, bedLen * 0.12]}>
+                    <boxGeometry args={[bedWidth - 0.04, 0.13, bedLen * 0.6]} />
+                    <meshStandardMaterial color={bedBlanketColor} roughness={0.5} />
+                  </mesh>
+                  {/* Pillow */}
+                  <mesh position={[0, 0.26, -bedLen / 2 + 0.22]}>
+                    <boxGeometry args={[bedWidth * 0.65, 0.06, 0.26]} />
+                    <meshStandardMaterial color="#ffffff" roughness={0.2} />
+                  </mesh>
+                </group>
+              );
+            });
+          })()}
+
+          {/* Study Desk against Window Wall */}
+          <group position={[0, 0, -depth / 2 + 0.55]}>
+            <mesh position={[0, 0.32, 0]} castShadow receiveShadow>
+              <boxGeometry args={[width * 0.45, 0.04, 0.48]} />
+              <meshStandardMaterial color="#5c3818" roughness={0.6} />
+            </mesh>
+            <mesh position={[-width * 0.2, 0.16, 0]}>
+              <boxGeometry args={[0.04, 0.32, 0.44]} />
+              <meshStandardMaterial color="#1e293b" />
+            </mesh>
+            <mesh position={[width * 0.2, 0.16, 0]}>
+              <boxGeometry args={[0.04, 0.32, 0.44]} />
+              <meshStandardMaterial color="#1e293b" />
+            </mesh>
+            {/* Chair */}
+            <mesh position={[0, 0.22, 0.28]}>
+              <boxGeometry args={[0.32, 0.04, 0.32]} />
+              <meshStandardMaterial color="#0284c7" />
+            </mesh>
+          </group>
+
+          {/* Wardrobe Storage Unit */}
+          <mesh position={[-width / 2 + 0.26, 0.52, depth / 2 - 0.38]} castShadow receiveShadow>
+            <boxGeometry args={[0.38, 1.04, 0.48]} />
+            <meshStandardMaterial color="#78350f" roughness={0.7} />
+          </mesh>
+        </group>
+      )}
+
+      {/* 4. Billboard Room Label Facing Active Camera */}
+      <Billboard position={[0, height / 2 + 0.35, 0]}>
+        <Text
+          fontSize={0.24}
+          color={isSelected ? '#38bdf8' : hovered ? '#ffffff' : '#f1f5f9'}
+          anchorX="center"
+          anchorY="middle"
+          outlineWidth={0.03}
+          outlineColor="#090d16"
+        >
+          {room.Room_Number}
+        </Text>
+      </Billboard>
+
+      {/* 5. Clean Non-Intersecting Selection Framing */}
+      {isSelected && (
+        <group>
+          {/* Luminous Floor Frame */}
+          <mesh position={[0, -height / 2 + 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[Math.min(width, depth) * 0.4, Math.min(width, depth) * 0.48, 32]} />
+            <meshBasicMaterial color="#38bdf8" side={THREE.DoubleSide} />
+          </mesh>
+          {/* Ceiling Downlight Halo */}
+          <pointLight position={[0, height / 2 - 0.2, 0]} intensity={0.9} color="#38bdf8" distance={4} />
+        </group>
+      )}
+
+      {/* 6. Click Interaction Hitbox (Invisible, zero coplanar artifacts) */}
       <mesh
+        visible={false}
         onClick={(e) => {
           e.stopPropagation();
           onClick();
@@ -156,42 +347,76 @@ const RoomMesh: React.FC<RoomMeshProps> = ({ room, isSelected, isDimmed, isExplo
         onPointerOver={(e) => {
           e.stopPropagation();
           setHovered(true);
+          document.body.style.cursor = 'pointer';
         }}
-        onPointerOut={() => setHovered(false)}
-        castShadow
-        receiveShadow
+        onPointerOut={() => {
+          setHovered(false);
+          document.body.style.cursor = 'auto';
+        }}
       >
-        <boxGeometry args={room.dimensions} />
-        <meshStandardMaterial
-          color={color}
-          transparent
-          opacity={isDimmed ? 0.12 : isSelected ? 0.4 : hovered ? 0.3 : 0.18}
-          roughness={0.3}
-          metalness={0.1}
-          emissive={isSelected ? '#0284c7' : hovered ? '#1e40af' : '#000000'}
-          emissiveIntensity={isSelected ? 0.4 : hovered ? 0.2 : 0}
-        />
+        <boxGeometry args={[width, height, depth]} />
+        <meshBasicMaterial transparent opacity={0} />
       </mesh>
+    </group>
+  );
+};
 
-      {/* Wireframe Architectural Edges */}
-      <lineSegments>
-        <edgesGeometry args={[new THREE.BoxGeometry(...room.dimensions)]} />
-        <lineBasicMaterial color={isSelected ? '#38bdf8' : hovered ? '#60a5fa' : '#475569'} transparent opacity={isDimmed ? 0.2 : 0.75} />
-      </lineSegments>
+/**
+ * Architectural Stairwell and Vertical Circulation Tower
+ */
+const StairwellTower: React.FC<{
+  xPos: number;
+  floors: number[];
+  floorHeight: number;
+  buildingDepth: number;
+  isExploded: boolean;
+}> = ({ xPos, floors, floorHeight, buildingDepth, isExploded }) => {
+  const floorCount = floors.length;
+  const towerHeight = floorCount * floorHeight;
 
-      {/* Room Number Signage */}
-      {!isDimmed && (
-        <Text
-          position={[0, 0.3, depth / 2 + 0.08]}
-          fontSize={0.24}
-          color="#f8fafc"
-          anchorX="center"
-          anchorY="middle"
-          outlineWidth={0.03}
-          outlineColor="#0f172a"
-        >
-          {room.Room_Number}
-        </Text>
+  return (
+    <group position={[xPos, 0, 0]}>
+      {floors.map((fNum, idx) => {
+        const floorY = idx * floorHeight + (isExploded ? idx * 3.0 : 0);
+        return (
+          <group key={`stair-${fNum}`} position={[0, floorY, 0]}>
+            {/* Landing Platform */}
+            <mesh position={[0, -0.05, 0]} receiveShadow>
+              <boxGeometry args={[2.4, 0.1, 2.6]} />
+              <meshStandardMaterial color="#334155" roughness={0.7} />
+            </mesh>
+            {/* Steps Representation */}
+            <mesh position={[0, 0.4, 0]} rotation={[0, 0, -0.45]}>
+              <boxGeometry args={[2.0, 0.1, 0.8]} />
+              <meshStandardMaterial color="#64748b" roughness={0.6} />
+            </mesh>
+            {/* Handrail */}
+            <mesh position={[0, 0.8, 0.45]}>
+              <boxGeometry args={[1.8, 0.04, 0.04]} />
+              <meshStandardMaterial color="#38bdf8" metalness={0.8} />
+            </mesh>
+          </group>
+        );
+      })}
+
+      {/* Tower Exterior Frame when not exploded */}
+      {!isExploded && (
+        <group position={[0, towerHeight / 2, 0]}>
+          {/* Back Glass Wall */}
+          <mesh position={[0, 0, -1.3]}>
+            <boxGeometry args={[2.4, towerHeight, 0.08]} />
+            <meshPhysicalMaterial color="#38bdf8" transparent opacity={0.4} roughness={0.2} />
+          </mesh>
+          {/* Corner Structural Columns */}
+          <mesh position={[-1.15, 0, 1.3]}>
+            <boxGeometry args={[0.15, towerHeight, 0.15]} />
+            <meshStandardMaterial color="#1e293b" />
+          </mesh>
+          <mesh position={[1.15, 0, 1.3]}>
+            <boxGeometry args={[0.15, towerHeight, 0.15]} />
+            <meshStandardMaterial color="#1e293b" />
+          </mesh>
+        </group>
       )}
     </group>
   );
@@ -199,171 +424,354 @@ const RoomMesh: React.FC<RoomMeshProps> = ({ room, isSelected, isDimmed, isExplo
 
 export const Building3D: React.FC<Building3DProps> = ({
   rooms,
+  bounds,
   selectedFloor,
   selectedRoom,
   onSelectRoom,
   cutawayMode,
+  onToggleCutaway,
+  className,
 }) => {
   const [isExploded, setIsExploded] = useState(false);
+  const [internalCutaway, setInternalCutaway] = useState(cutawayMode);
+
+  // Synchronize internal and external cutaway state
+  const activeCutaway = onToggleCutaway ? cutawayMode : internalCutaway;
+  const toggleCutaway = onToggleCutaway ?? (() => setInternalCutaway(!internalCutaway));
+
+  const controlsRef = useRef<any>(null);
+
+  // Auto-generate effective bounds from rooms if caller omitted bounds (e.g. HomePage)
+  const effectiveBounds = useMemo(() => {
+    if (bounds) return bounds;
+    if (rooms && rooms.length > 0) {
+      try {
+        return generateDynamicLayout(rooms as any).bounds;
+      } catch (e) {
+        console.warn('Auto bounds generation fallback:', e);
+      }
+    }
+    return undefined;
+  }, [bounds, rooms]);
+
+  // Structural Dimensions derived safely from effective bounds or computed defaults
+  const floorHeight = effectiveBounds?.floorHeight ?? 1.7;
+  const buildingWidth = effectiveBounds?.width ?? 12.0;
+  const buildingDepth = effectiveBounds?.depth ?? 7.2;
+  const renderedFloors = effectiveBounds?.floors && effectiveBounds.floors.length > 0 ? effectiveBounds.floors : [1, 2, 3];
+  const floorCount = renderedFloors.length;
+  const totalHeight = floorCount * floorHeight;
+
+  const foundW = buildingWidth + 1.8;
+  const foundD = buildingDepth + 1.8;
+
+  const roofY = totalHeight;
+  const roofW = buildingWidth + 0.4;
+  const roofD = buildingDepth + 0.4;
+
+  // Calibrated vertical centering and camera framing
+  const baseDim = Math.max(buildingWidth, buildingDepth);
+  const targetY = Number((totalHeight * 0.42).toFixed(2));
+  const cameraTarget: [number, number, number] = useMemo(
+    () => [0, targetY, 0],
+    [targetY]
+  );
+
+  const framingDist = Math.max(16, baseDim * 1.35 + totalHeight * 0.65);
+  const cameraPos: [number, number, number] = useMemo(
+    () => [
+      Number((buildingWidth * 0.78).toFixed(2)),
+      Number((totalHeight * 0.95 + 2.8).toFixed(2)),
+      Number((buildingDepth * 1.5 + framingDist * 0.45).toFixed(2)),
+    ],
+    [buildingWidth, totalHeight, buildingDepth, framingDist]
+  );
+
+  const maxCameraDistance = Math.max(40, framingDist * 2.2);
+
+  const resetCamera = () => {
+    if (controlsRef.current) {
+      controlsRef.current.target.set(cameraTarget[0], cameraTarget[1], cameraTarget[2]);
+      controlsRef.current.object.position.set(cameraPos[0], cameraPos[1], cameraPos[2]);
+      controlsRef.current.update();
+    }
+  };
+
+  useEffect(() => {
+    if (controlsRef.current) {
+      controlsRef.current.target.set(cameraTarget[0], cameraTarget[1], cameraTarget[2]);
+      controlsRef.current.update();
+    }
+  }, [cameraTarget]);
+
+  const containerClass = className ?? "w-full h-[520px] sm:h-[620px]";
 
   return (
-    <div className="w-full h-full relative bg-gradient-to-b from-slate-900 via-slate-850 to-slate-950 rounded-xl overflow-hidden shadow-inner">
+    <div className={`${containerClass} rounded-2xl overflow-hidden bg-gradient-to-b from-[#070b14] via-[#0b1329] to-[#0f172a] relative border border-slate-800 shadow-2xl select-none`}>
       <Canvas
         shadows
-        camera={{ position: [11, 9, 12], fov: 42 }}
-        className="w-full h-full cursor-grab active:cursor-grabbing"
+        camera={{
+          position: cameraPos,
+          fov: 36,
+          near: 0.2, // Essential for high-precision 24-bit depth buffer
+          far: 220,  // Prevents depth quantization Z-fighting
+        }}
+        gl={{
+          antialias: true,
+          powerPreference: 'high-performance',
+          logarithmicDepthBuffer: false,
+        }}
       >
-        {/* Natural Sun & Ambient Lighting */}
-        <ambientLight intensity={0.8} />
+        {/* Architectural Lighting with calibrated normalBias & shadowBias */}
+        <ambientLight intensity={0.75} />
         <directionalLight
-          position={[14, 20, 12]}
-          intensity={1.3}
+          position={[25, 45, 20]}
+          intensity={1.25}
           castShadow
           shadow-mapSize-width={2048}
           shadow-mapSize-height={2048}
-          shadow-camera-far={50}
-          shadow-camera-left={-12}
-          shadow-camera-right={12}
-          shadow-camera-top={12}
-          shadow-camera-bottom={-12}
+          shadow-camera-near={1}
+          shadow-camera-far={90}
+          shadow-camera-left={-buildingWidth * 1.2}
+          shadow-camera-right={buildingWidth * 1.2}
+          shadow-camera-top={totalHeight * 2.5}
+          shadow-camera-bottom={-5}
+          shadow-bias={-0.0005} // ELIMINATES SHADOW ACNE AND DIAGONAL STRIPES
+          shadow-normalBias={0.04} // ELIMINATES SURFACE FRAGMENTATION
         />
-        <pointLight position={[-10, 8, -10]} intensity={0.4} />
+        <directionalLight position={[-20, 25, -25]} intensity={0.45} />
+        <pointLight position={[0, totalHeight + 4, 0]} intensity={0.5} color="#38bdf8" />
 
-        {/* Orbit Controls */}
+        {/* Orbit Controls with Dynamic Target */}
         <OrbitControls
+          ref={controlsRef}
           enableDamping
           dampingFactor={0.05}
           maxPolarAngle={Math.PI / 2.05}
-          minDistance={5}
-          maxDistance={30}
+          minDistance={4}
+          maxDistance={maxCameraDistance}
+          target={cameraTarget}
         />
 
-        {/* Campus Ground & Grid */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
-          <planeGeometry args={[45, 45]} />
-          <meshStandardMaterial color="#0f172a" roughness={0.9} />
+        {/* Campus Ground Plane */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.41, 0]} receiveShadow>
+          <planeGeometry args={[Math.max(50, buildingWidth * 2.5), Math.max(50, buildingWidth * 2.5)]} />
+          <meshStandardMaterial color="#080e1a" roughness={0.9} />
         </mesh>
+
         <Grid
-          position={[0, 0, 0]}
-          args={[32, 32]}
-          cellSize={1}
+          position={[0, -0.4, 0]}
+          args={[Math.max(40, Math.ceil(buildingWidth * 2)), Math.max(40, Math.ceil(buildingWidth * 2))]}
+          cellSize={1.2}
           cellThickness={0.7}
           cellColor="#1e293b"
-          sectionSize={4}
+          sectionSize={4.8}
           sectionThickness={1.2}
           sectionColor="#334155"
-          fadeDistance={25}
+          fadeDistance={Math.max(30, buildingWidth * 2)}
           fadeStrength={1}
         />
 
-        {/* Building Foundation Plinth & Steps */}
-        <mesh position={[0, 0.05, 0]} receiveShadow>
-          <boxGeometry args={[11, 0.12, 8]} />
-          <meshStandardMaterial color="#334155" roughness={0.7} />
+        {/* Structural Building Foundation Plinth (Sits strictly beneath the floor slabs) */}
+        <mesh position={[0, -0.25, 0]} receiveShadow>
+          <boxGeometry args={[foundW, 0.3, foundD]} />
+          <meshStandardMaterial color="#1e293b" roughness={0.75} />
+        </mesh>
+        <mesh position={[0, -0.09, 0]}>
+          <boxGeometry args={[foundW - 0.2, 0.02, foundD - 0.2]} />
+          <meshStandardMaterial color="#334155" roughness={0.6} />
         </mesh>
 
-        {/* Floor Slabs (Ground, Floor 1, Floor 2) */}
-        {[0, 1.7, 3.4].map((baseY, idx) => {
-          const floorNum = idx + 1;
+        {/* Dynamic Architectural Floor Slabs & Corridors for each storey */}
+        {renderedFloors.map((floorNum, idx) => {
           const isDimmed = selectedFloor !== 'all' && selectedFloor !== floorNum;
-          const yPos = baseY + (isExploded ? (floorNum - 1) * 2.2 : 0);
+          const floorOffset = isExploded ? idx * 3.0 : 0;
+          const slabBaseY = idx * floorHeight + floorOffset;
+
+          const slabW = buildingWidth;
+          const slabD = buildingDepth;
+          const corrW = buildingWidth - 0.6;
+          const corrD = effectiveBounds?.corridorWidth ?? 1.4;
 
           return (
-            <group key={`floor-slab-${idx}`} position={[0, yPos, 0]}>
-              {/* Floor Base Slab */}
-              <mesh receiveShadow>
-                <boxGeometry args={[10.2, 0.08, 7.2]} />
+            <group key={`floor-level-${floorNum}`}>
+              {/* Solid Storey Base Slab (Sits strictly beneath room floor plane) */}
+              <mesh position={[0, slabBaseY - 0.05, 0]} receiveShadow>
+                <boxGeometry args={[slabW, 0.1, slabD]} />
                 <meshStandardMaterial
-                  color="#475569"
-                  transparent
-                  opacity={isDimmed ? 0.25 : 0.95}
-                  roughness={0.5}
+                  color={isDimmed ? '#1e293b' : '#334155'}
+                  roughness={0.65}
+                  transparent={isDimmed}
+                  opacity={isDimmed ? 0.2 : 1.0}
                 />
               </mesh>
 
-              {/* Central Corridor Floor */}
-              <mesh position={[0, 0.06, 0]}>
-                <boxGeometry args={[9.6, 0.02, 1.4]} />
+              {/* Central Circulation Corridor Floor (Flush tile finish) */}
+              <mesh position={[0, slabBaseY + 0.005, 0]} receiveShadow>
+                <boxGeometry args={[corrW, 0.01, corrD]} />
                 <meshStandardMaterial
-                  color="#94a3b8"
-                  transparent
-                  opacity={isDimmed ? 0.15 : 0.85}
+                  color={isDimmed ? '#334155' : '#475569'}
                   roughness={0.6}
+                  transparent={isDimmed}
+                  opacity={isDimmed ? 0.2 : 1.0}
                 />
               </mesh>
+
+              {/* Corridor Directional Floor Guide Stripe */}
+              <mesh position={[0, slabBaseY + 0.012, 0]}>
+                <boxGeometry args={[corrW - 0.4, 0.004, 0.12]} />
+                <meshBasicMaterial color="#38bdf8" transparent opacity={isDimmed ? 0.15 : 0.6} />
+              </mesh>
+
+              {/* East & West Corridor End-Cap Walls with Windows */}
+              {!isDimmed && (
+                <group>
+                  {/* West End Wall */}
+                  <mesh position={[-slabW / 2 + 0.04, slabBaseY + floorHeight / 2 - 0.05, 0]} castShadow>
+                    <boxGeometry args={[0.08, floorHeight - 0.1, corrD]} />
+                    <meshStandardMaterial color="#cbd5e1" roughness={0.7} />
+                  </mesh>
+                  {/* East End Wall */}
+                  <mesh position={[slabW / 2 - 0.04, slabBaseY + floorHeight / 2 - 0.05, 0]} castShadow>
+                    <boxGeometry args={[0.08, floorHeight - 0.1, corrD]} />
+                    <meshStandardMaterial color="#cbd5e1" roughness={0.7} />
+                  </mesh>
+                </group>
+              )}
             </group>
           );
         })}
 
-        {/* Roof (Hidden in Cutaway or Exploded Mode) */}
-        {!cutawayMode && !isExploded && selectedFloor === 'all' && (
-          <group position={[0, 5.15, 0]}>
-            <mesh castShadow receiveShadow>
-              <boxGeometry args={[10.4, 0.15, 7.4]} />
-              <meshStandardMaterial color="#1e293b" roughness={0.4} />
+        {/* Vertical Circulation Stairwell Tower */}
+        <StairwellTower
+          xPos={-buildingWidth / 2 - 1.4}
+          floors={renderedFloors}
+          floorHeight={floorHeight}
+          buildingDepth={buildingDepth}
+          isExploded={isExploded}
+        />
+
+        {/* Architectural Roof (Rendered when cutaway is off and not exploded) */}
+        {!activeCutaway && !isExploded && selectedFloor === 'all' && (
+          <group position={[0, roofY, 0]}>
+            {/* Main Roof Slab */}
+            <mesh position={[0, 0.05, 0]} castShadow receiveShadow>
+              <boxGeometry args={[roofW, 0.1, roofD]} />
+              <meshStandardMaterial color="#1e293b" roughness={0.8} />
             </mesh>
-            {/* Parapet */}
-            <lineSegments>
-              <edgesGeometry args={[new THREE.BoxGeometry(10.4, 0.4, 7.4)]} />
-              <lineBasicMaterial color="#64748b" />
-            </lineSegments>
+            {/* Perimeter Parapet Walls */}
+            <mesh position={[0, 0.25, -roofD / 2 + 0.06]}>
+              <boxGeometry args={[roofW, 0.3, 0.12]} />
+              <meshStandardMaterial color="#334155" roughness={0.7} />
+            </mesh>
+            <mesh position={[0, 0.25, roofD / 2 - 0.06]}>
+              <boxGeometry args={[roofW, 0.3, 0.12]} />
+              <meshStandardMaterial color="#334155" roughness={0.7} />
+            </mesh>
+            <mesh position={[-roofW / 2 + 0.06, 0.25, 0]}>
+              <boxGeometry args={[0.12, 0.3, roofD]} />
+              <meshStandardMaterial color="#334155" roughness={0.7} />
+            </mesh>
+            <mesh position={[roofW / 2 - 0.06, 0.25, 0]}>
+              <boxGeometry args={[0.12, 0.3, roofD]} />
+              <meshStandardMaterial color="#334155" roughness={0.7} />
+            </mesh>
+
+            {/* Rooftop HVAC Equipment Units */}
+            <mesh position={[roofW * 0.2, 0.45, 0]} castShadow>
+              <boxGeometry args={[1.6, 0.7, 1.4]} />
+              <meshStandardMaterial color="#475569" roughness={0.5} />
+            </mesh>
+            <mesh position={[-roofW * 0.25, 0.45, -0.6]} castShadow>
+              <boxGeometry args={[1.2, 0.7, 1.2]} />
+              <meshStandardMaterial color="#475569" roughness={0.5} />
+            </mesh>
+            {/* Staircase Rooftop Bulkhead Access */}
+            <mesh position={[-roofW / 2 + 1.2, 0.6, 0]} castShadow>
+              <boxGeometry args={[1.8, 1.0, 1.8]} />
+              <meshStandardMaterial color="#334155" roughness={0.6} />
+            </mesh>
           </group>
         )}
 
-        {/* Individual 3D Room Meshes with Furniture */}
+        {/* Individual Procedural 3D Room Meshes with Furniture */}
         {rooms.map((room) => {
           const isDimmed = selectedFloor !== 'all' && selectedFloor !== room.Floor;
           const isSelected = selectedRoom?.Room_ID === room.Room_ID;
+
+          const floorIdx = effectiveBounds?.floors
+            ? Math.max(0, effectiveBounds.floors.indexOf(room.Floor ?? 1))
+            : ((room.Floor ?? 1) - 1);
+          const floorOffset = isExploded ? floorIdx * 3.0 : 0;
 
           return (
             <RoomMesh
               key={room.Room_ID}
               room={room}
+              floorOffset={floorOffset}
               isSelected={isSelected}
               isDimmed={isDimmed}
-              isExploded={isExploded}
+              cutawayMode={activeCutaway}
               onClick={() => onSelectRoom(room)}
             />
           );
         })}
       </Canvas>
 
-      {/* Floating Canvas UI Controls / Legend */}
-      <div className="absolute top-4 left-4 flex flex-col gap-2">
-        <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/80 px-3.5 py-2.5 rounded-lg text-white space-y-1 shadow-lg">
-          <div className="text-xs font-semibold text-slate-300 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span>
-            <span>Architectural 3D Hostel Block</span>
-          </div>
-          <p className="text-[11px] text-slate-400">Click any room to inspect 3D interior & beds</p>
+      {/* Floating Canvas UI Controls - Sleek Header Bar */}
+      <div className="absolute top-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 pointer-events-none z-10">
+        <div className="pointer-events-auto bg-slate-900/90 backdrop-blur-md border border-slate-700/80 px-3 py-1.5 rounded-xl text-white shadow-lg flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse shrink-0"></span>
+          <span className="text-xs font-bold text-slate-200">Interactive 3D Building Model</span>
         </div>
 
-        {/* Explode View Toggle Button */}
-        <button
-          onClick={() => setIsExploded(!isExploded)}
-          className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-            isExploded
-              ? 'bg-teal-500 text-white border-teal-400 shadow-md'
-              : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:bg-slate-800'
-          }`}
-        >
-          {isExploded ? 'Collapse Floors' : 'Explode Floors (3D)'}
-        </button>
+        {/* Quick View Controls: Explode Floors, Cutaway & Reset Camera */}
+        <div className="pointer-events-auto flex items-center gap-1.5 flex-wrap">
+          <button
+            onClick={() => setIsExploded(!isExploded)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer shadow-md ${
+              isExploded
+                ? 'bg-teal-500 text-white border-teal-400'
+                : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:bg-slate-800'
+            }`}
+          >
+            {isExploded ? 'Collapse Floors' : 'Explode Storeys (3D)'}
+          </button>
+
+          <button
+            onClick={toggleCutaway}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer shadow-md ${
+              activeCutaway
+                ? 'bg-sky-600 text-white border-sky-400'
+                : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:bg-slate-800'
+            }`}
+          >
+            {activeCutaway ? 'Show Exterior' : 'Cutaway Section'}
+          </button>
+
+          <button
+            onClick={resetCamera}
+            className="p-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-700 transition-all cursor-pointer shadow-md"
+            title="Reset Camera Angle"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
-      {/* Legend Badge Bar */}
-      <div className="absolute bottom-4 left-4 right-4 sm:right-auto bg-slate-900/90 backdrop-blur-md border border-slate-700/80 px-3.5 py-2 rounded-lg text-white text-xs flex items-center justify-between sm:justify-start gap-4 shadow-lg">
+      {/* Legend Status Bar */}
+      <div className="absolute bottom-3 left-3 pointer-events-auto z-10 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 px-3 py-1.5 rounded-xl text-white text-[11px] sm:text-xs flex items-center gap-3 sm:gap-4 shadow-lg">
         <div className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
           <span className="text-slate-300">Available</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-          <span className="text-slate-300">Partial</span>
+          <span className="text-slate-300">Partially Free</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
-          <span className="text-slate-300">Occupied</span>
+          <span className="text-slate-300">Fully Occupied</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-slate-500"></span>

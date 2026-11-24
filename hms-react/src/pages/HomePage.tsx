@@ -219,19 +219,20 @@ export const HomePage: React.FC = () => {
             {/* Right Column: Interactive 3D Teaser Card */}
             <div className="lg:col-span-5">
               <div className="relative rounded-2xl bg-white/90 dark:bg-[#111827]/80 p-2.5 border border-slate-200 dark:border-[#334155] shadow-lg dark:shadow-2xl backdrop-blur-md">
-                <div className="h-[360px] w-full rounded-xl overflow-hidden relative">
+                <div className="h-[480px] sm:h-[520px] lg:h-[540px] w-full rounded-xl overflow-hidden relative">
                   <Building3D
                     rooms={ILLUSTRATIVE_ROOMS}
                     selectedFloor="all"
                     selectedRoom={selectedRoom}
                     onSelectRoom={(r) => setSelectedRoom(r)}
                     cutawayMode={false}
+                    className="w-full h-full"
                   />
                 </div>
                 <div className="p-3 text-center flex items-center justify-between">
                   <span className="text-xs text-slate-500 dark:text-[#94A3B8] font-medium flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse"></span>
-                    <span>Interactive 3D Prototype</span>
+                    <span>Interactive 3D Building Model</span>
                   </span>
                   <Link
                     to="/explorer"

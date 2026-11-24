@@ -1,6 +1,11 @@
 from flask import Blueprint, jsonify, request
 from db import get_db_connection
-from routes.route_utils import format_row, handle_db_error
+from routes.route_utils import (
+    format_row,
+    handle_db_error,
+    acquire_session_named_lock,
+    NamedLockTimeout
+)
 from services.auth_service import warden_required
 
 bed_bp = Blueprint("bed", __name__, url_prefix="/api/beds")
@@ -156,44 +161,53 @@ def create_bed():
             }), 400
 
         connection = get_db_connection()
-        cursor = connection.cursor()
+        with acquire_session_named_lock(connection, "hostelflow_alloc_lock", timeout=10):
+            connection.start_transaction()
+            cursor = connection.cursor()
 
-        # Check primary key existence
-        cursor.execute("SELECT Bed_ID FROM bed WHERE Bed_ID = %s", (bed_id,))
-        if cursor.fetchone():
+            # Check primary key existence
+            cursor.execute("SELECT Bed_ID FROM bed WHERE Bed_ID = %s", (bed_id,))
+            if cursor.fetchone():
+                connection.rollback()
+                return jsonify({
+                    "status": "error",
+                    "message": f"Bed with Bed_ID {bed_id} already exists."
+                }), 409
+
+            # Check foreign key existence
+            cursor.execute("SELECT Room_ID FROM room WHERE Room_ID = %s", (room_id,))
+            if not cursor.fetchone():
+                connection.rollback()
+                return jsonify({
+                    "status": "error",
+                    "message": f"Referenced Room_ID {room_id} does not exist."
+                }), 409
+
+            cursor.execute("""
+                INSERT INTO bed
+                (Bed_ID, Bed_Number, Bed_Type, Bed_Status, Room_ID)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (
+                bed_id,
+                bed_number.strip(),
+                data.get("Bed_Type"),
+                data.get("Bed_Status", "Available"),
+                room_id
+            ))
+
+            connection.commit()
+
             return jsonify({
-                "status": "error",
-                "message": f"Bed with Bed_ID {bed_id} already exists."
-            }), 409
+                "status": "success",
+                "message": "Bed created successfully.",
+                "Bed_ID": bed_id
+            }), 201
 
-        # Check foreign key existence
-        cursor.execute("SELECT Room_ID FROM room WHERE Room_ID = %s", (room_id,))
-        if not cursor.fetchone():
-            return jsonify({
-                "status": "error",
-                "message": f"Referenced Room_ID {room_id} does not exist."
-            }), 409
-
-        cursor.execute("""
-            INSERT INTO bed
-            (Bed_ID, Bed_Number, Bed_Type, Bed_Status, Room_ID)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (
-            bed_id,
-            bed_number.strip(),
-            data.get("Bed_Type"),
-            data.get("Bed_Status", "Available"),
-            room_id
-        ))
-
-        connection.commit()
-
+    except NamedLockTimeout:
         return jsonify({
-            "status": "success",
-            "message": "Bed created successfully.",
-            "Bed_ID": bed_id
-        }), 201
-
+            "status": "error",
+            "message": "Allocation lock acquisition timed out. Another bed operation is in progress."
+        }), 503
     except Exception as error:
         if connection and connection.is_connected():
             connection.rollback()
@@ -255,35 +269,56 @@ def update_bed(bed_id):
                 }), 400
 
         connection = get_db_connection()
-        cursor = connection.cursor()
+        with acquire_session_named_lock(connection, "hostelflow_alloc_lock", timeout=10):
+            connection.start_transaction()
+            cursor = connection.cursor()
 
-        cursor.execute("SELECT Bed_ID FROM bed WHERE Bed_ID = %s", (bed_id,))
-        if cursor.fetchone() is None:
-            return jsonify({
-                "status": "error",
-                "message": "Bed not found."
-            }), 404
-
-        if "Room_ID" in updates:
-            cursor.execute("SELECT Room_ID FROM room WHERE Room_ID = %s", (updates["Room_ID"],))
+            cursor.execute("SELECT Bed_ID FROM bed WHERE Bed_ID = %s FOR UPDATE", (bed_id,))
             if cursor.fetchone() is None:
+                connection.rollback()
                 return jsonify({
                     "status": "error",
-                    "message": f"Referenced Room_ID {updates['Room_ID']} does not exist."
-                }), 409
+                    "message": "Bed not found."
+                }), 404
 
-        set_clause = ", ".join(f"`{k}` = %s" for k in updates)
-        values = list(updates.values()) + [bed_id]
+            # If setting Bed_Status to Available, verify no active allocations exist for this bed
+            if updates.get("Bed_Status") == "Available":
+                cursor.execute("SELECT COUNT(*) FROM room_allocation WHERE Bed_ID = %s AND Allocation_Status = 'Active'", (bed_id,))
+                active_count_res = cursor.fetchone()
+                active_count = active_count_res[0] if isinstance(active_count_res, (list, tuple)) else active_count_res["COUNT(*)"]
+                if active_count > 0:
+                    connection.rollback()
+                    return jsonify({
+                        "status": "error",
+                        "message": f"Cannot set Bed_Status to 'Available' for Bed_ID {bed_id} while {active_count} active room allocation(s) exist."
+                    }), 409
 
-        cursor.execute(f"UPDATE bed SET {set_clause} WHERE Bed_ID = %s", values)
-        connection.commit()
+            if "Room_ID" in updates:
+                cursor.execute("SELECT Room_ID FROM room WHERE Room_ID = %s", (updates["Room_ID"],))
+                if cursor.fetchone() is None:
+                    connection.rollback()
+                    return jsonify({
+                        "status": "error",
+                        "message": f"Referenced Room_ID {updates['Room_ID']} does not exist."
+                    }), 409
 
+            set_clause = ", ".join(f"`{k}` = %s" for k in updates)
+            values = list(updates.values()) + [bed_id]
+
+            cursor.execute(f"UPDATE bed SET {set_clause} WHERE Bed_ID = %s", values)
+            connection.commit()
+
+            return jsonify({
+                "status": "success",
+                "message": "Bed updated successfully.",
+                "Bed_ID": bed_id
+            }), 200
+
+    except NamedLockTimeout:
         return jsonify({
-            "status": "success",
-            "message": "Bed updated successfully.",
-            "Bed_ID": bed_id
-        }), 200
-
+            "status": "error",
+            "message": "Allocation lock acquisition timed out. Another bed operation is in progress."
+        }), 503
     except Exception as error:
         if connection and connection.is_connected():
             connection.rollback()
@@ -305,24 +340,43 @@ def delete_bed(bed_id):
 
     try:
         connection = get_db_connection()
-        cursor = connection.cursor()
+        with acquire_session_named_lock(connection, "hostelflow_alloc_lock", timeout=10):
+            connection.start_transaction()
+            cursor = connection.cursor()
 
-        cursor.execute("SELECT Bed_ID FROM bed WHERE Bed_ID = %s", (bed_id,))
-        if cursor.fetchone() is None:
+            cursor.execute("SELECT Bed_ID FROM bed WHERE Bed_ID = %s FOR UPDATE", (bed_id,))
+            if cursor.fetchone() is None:
+                connection.rollback()
+                return jsonify({
+                    "status": "error",
+                    "message": "Bed not found."
+                }), 404
+
+            # Verify no allocations reference this bed
+            cursor.execute("SELECT COUNT(*) FROM room_allocation WHERE Bed_ID = %s", (bed_id,))
+            total_allocs_res = cursor.fetchone()
+            total_allocs = total_allocs_res[0] if isinstance(total_allocs_res, (list, tuple)) else total_allocs_res["COUNT(*)"]
+            if total_allocs > 0:
+                connection.rollback()
+                return jsonify({
+                    "status": "error",
+                    "message": f"Cannot delete Bed_ID {bed_id} because {total_allocs} room allocation record(s) reference it."
+                }), 409
+
+            cursor.execute("DELETE FROM bed WHERE Bed_ID = %s", (bed_id,))
+            connection.commit()
+
             return jsonify({
-                "status": "error",
-                "message": "Bed not found."
-            }), 404
+                "status": "success",
+                "message": "Bed deleted successfully.",
+                "Bed_ID": bed_id
+            }), 200
 
-        cursor.execute("DELETE FROM bed WHERE Bed_ID = %s", (bed_id,))
-        connection.commit()
-
+    except NamedLockTimeout:
         return jsonify({
-            "status": "success",
-            "message": "Bed deleted successfully.",
-            "Bed_ID": bed_id
-        }), 200
-
+            "status": "error",
+            "message": "Allocation lock acquisition timed out. Another bed operation is in progress."
+        }), 503
     except Exception as error:
         if connection and connection.is_connected():
             connection.rollback()
