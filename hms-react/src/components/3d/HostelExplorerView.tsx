@@ -106,7 +106,7 @@ export const HostelExplorerView: React.FC<HostelExplorerViewProps> = ({
   const [layoutResult, setLayoutResult] = useState<LayoutResult | null>(null);
   const [selectedFloor, setSelectedFloor] = useState<number | 'all'>('all');
   const [selectedRoom, setSelectedRoom] = useState<DynamicallyPositionedRoom | null>(null);
-  const [cutawayMode, setCutawayMode] = useState<boolean>(false);
+  const [cutawayMode, setCutawayMode] = useState<boolean>(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
 
@@ -446,9 +446,9 @@ export const HostelExplorerView: React.FC<HostelExplorerViewProps> = ({
       {/* ========================================================================= */}
       {viewLevel === 'campus' ? (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Left Column: 3D Campus Canvas (3 Cols) */}
-            <div className="lg:col-span-3 space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* Left Column: 3D Campus Canvas (8 Cols on XL, 7 Cols on LG) */}
+            <div className="lg:col-span-7 xl:col-span-8 space-y-4 min-w-0">
               {initialLoading ? (
                 <div className="w-full h-[540px] sm:h-[640px] rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col items-center justify-center text-slate-400 gap-3">
                   <RotateCcw className="w-8 h-8 animate-spin text-teal-400" />
@@ -471,8 +471,8 @@ export const HostelExplorerView: React.FC<HostelExplorerViewProps> = ({
               )}
             </div>
 
-            {/* Right Column: Selected Hostel Overview Panel & Campus Statistics (1 Col) */}
-            <div className="space-y-4">
+            {/* Right Column: Selected Hostel Overview Panel & Campus Statistics (4 Cols on XL, 5 Cols on LG) */}
+            <div className="lg:col-span-5 xl:col-span-4 space-y-4 min-w-0">
               <HostelOverviewPanel
                 hostel={selectedCampusHostel}
                 onEnterHostel={handleEnterHostel}

@@ -18,12 +18,16 @@ import {
 } from 'lucide-react';
 import { Building3D } from '../components/3d/Building3D';
 import { RoomDetailModal } from '../components/3d/RoomDetailModal';
-import { ILLUSTRATIVE_ROOMS, IllustrativeRoom } from '../data/illustrativeHostel';
+import { generateDynamicLayout, LayoutResult, DynamicallyPositionedRoom } from '../utils/explorerLayout';
+import { DEFAULT_BLOCK_A1_LAYOUT } from '../data/authoritativeHostel';
 import { apiClient } from '../services/apiClient';
 import { Hostel, HostelBlock, Room, Bed as BedType, RoomAllocation } from '../types';
 
 export const HomePage: React.FC = () => {
-  const [selectedRoom, setSelectedRoom] = useState<IllustrativeRoom | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<DynamicallyPositionedRoom | null>(null);
+  const [heroLayout, setHeroLayout] = useState<LayoutResult>(DEFAULT_BLOCK_A1_LAYOUT);
+  const [heroFloor, setHeroFloor] = useState<number | 'all'>('all');
+  const [heroCutaway, setHeroCutaway] = useState<boolean>(true);
 
   // Authoritative MySQL Entities from Flask Backend
   const [dbHostels, setDbHostels] = useState<Hostel[]>([]);
@@ -41,14 +45,21 @@ export const HomePage: React.FC = () => {
       apiClient.get('/rooms/'),
       apiClient.get('/beds/'),
       apiClient.get('/room-allocations/active').catch(() => apiClient.get('/room-allocations/?status=Active')),
+      apiClient.get('/explorer/block/201').catch(() => null),
     ])
-      .then(([hRes, bRes, rRes, bdRes, aRes]) => {
+      .then(([hRes, bRes, rRes, bdRes, aRes, explorerRes]) => {
         if (!mounted) return;
         if (hRes.status === 'fulfilled' && hRes.value.data?.data) setDbHostels(hRes.value.data.data);
         if (bRes.status === 'fulfilled' && bRes.value.data?.data) setDbBlocks(bRes.value.data.data);
         if (rRes.status === 'fulfilled' && rRes.value.data?.data) setDbRooms(rRes.value.data.data);
         if (bdRes.status === 'fulfilled' && bdRes.value.data?.data) setDbBeds(bdRes.value.data.data);
         if (aRes.status === 'fulfilled' && aRes.value.data?.data) setDbAllocations(aRes.value.data.data);
+        if (explorerRes.status === 'fulfilled' && explorerRes.value?.data?.data?.rooms) {
+          const liveRooms = explorerRes.value.data.data.rooms;
+          if (Array.isArray(liveRooms) && liveRooms.length > 0) {
+            setHeroLayout(generateDynamicLayout(liveRooms));
+          }
+        }
         if (hRes.status === 'fulfilled') setIsLiveConnected(true);
       })
       .catch((err) => {
@@ -219,26 +230,53 @@ export const HomePage: React.FC = () => {
             {/* Right Column: Interactive 3D Teaser Card */}
             <div className="lg:col-span-5">
               <div className="relative rounded-2xl bg-white/90 dark:bg-[#111827]/80 p-2.5 border border-slate-200 dark:border-[#334155] shadow-lg dark:shadow-2xl backdrop-blur-md">
+                {/* Quick Floor Filter & Block Identification Bar */}
+                <div className="flex items-center justify-between pb-2 px-1 border-b border-slate-100 dark:border-[#334155] mb-1.5">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-[#94A3B8]">
+                    <span className="font-bold text-slate-900 dark:text-white">Hostel A — Block A1</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 font-bold">
+                      {heroLayout.rooms.length} Rooms
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {(['all', 1, 2, 3] as const).map((fl) => (
+                      <button
+                        key={fl}
+                        onClick={() => setHeroFloor(fl)}
+                        className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                          heroFloor === fl
+                            ? 'bg-institutional-900 text-white dark:bg-sky-600 shadow-xs'
+                            : 'bg-slate-100 dark:bg-[#1E293B] text-slate-600 dark:text-[#94A3B8] hover:bg-slate-200 dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        {fl === 'all' ? 'All' : `F${fl}`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="h-[480px] sm:h-[520px] lg:h-[540px] w-full rounded-xl overflow-hidden relative">
                   <Building3D
-                    rooms={ILLUSTRATIVE_ROOMS}
-                    selectedFloor="all"
+                    rooms={heroLayout.rooms}
+                    bounds={heroLayout.bounds}
+                    selectedFloor={heroFloor}
                     selectedRoom={selectedRoom}
                     onSelectRoom={(r) => setSelectedRoom(r)}
-                    cutawayMode={false}
+                    cutawayMode={heroCutaway}
+                    onToggleCutaway={() => setHeroCutaway(!heroCutaway)}
                     className="w-full h-full"
                   />
                 </div>
                 <div className="p-3 text-center flex items-center justify-between">
                   <span className="text-xs text-slate-500 dark:text-[#94A3B8] font-medium flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse"></span>
-                    <span>Interactive 3D Building Model</span>
+                    <span>Interactive 3D Building Model ({heroLayout.rooms.length} Rooms • 60 Beds)</span>
                   </span>
                   <Link
                     to="/explorer"
                     className="text-xs text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 font-semibold flex items-center gap-1"
                   >
-                    <span>Full Screen Explorer</span>
+                    <span>Full Campus Explorer</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>

@@ -5,7 +5,7 @@ base = 'http://localhost:5000'
 
 expected = {
     1: {'name': 'Block C1', 'hostel': 'Hostel C', 'rooms': 1, 'beds': 2, 'occupied': 0, 'avail': 2},
-    201: {'name': 'Block A1', 'hostel': 'Hostel A', 'rooms': 5, 'beds': 12, 'occupied': 4, 'avail': 8},
+    201: {'name': 'Block A1', 'hostel': 'Hostel A', 'rooms': 30, 'beds': 60, 'occupied': 4, 'avail': 56},
     202: {'name': 'Block A2', 'hostel': 'Hostel A', 'rooms': 30, 'beds': 60, 'occupied': 0, 'avail': 60},
     203: {'name': 'Block B1', 'hostel': 'Hostel B', 'rooms': 2, 'beds': 4, 'occupied': 2, 'avail': 2},
     204: {'name': 'Block D1', 'hostel': 'Hostel D', 'rooms': 30, 'beds': 75, 'occupied': 0, 'avail': 75},
@@ -60,16 +60,16 @@ for b_id, exp in expected.items():
         print(f'PASS Block {b_id} ({b_name}, {h_name}): Rooms={tr}, Beds={tb}, Occ={ob}, Avail={ab}, Rate={rate}%, Floors={fls}')
 
 print(f'\n=== CUMULATIVE INVENTORY TOTALS ===')
-print(f'Total Rooms: {total_rooms} (Expected: 98)')
-print(f'Total Beds: {total_beds} (Expected: 228)')
+print(f'Total Rooms: {total_rooms} (Expected: 123)')
+print(f'Total Beds: {total_beds} (Expected: 276)')
 print(f'Total Occupied Beds: {total_occupied} (Expected: 6)')
-print(f'Total Available Beds: {total_avail} (Expected: 222)')
+print(f'Total Available Beds: {total_avail} (Expected: 270)')
 print(f'Zero PII Exposed: {all_pii_clean}')
 
-assert total_rooms == 98
-assert total_beds == 228
+assert total_rooms == 123
+assert total_beds == 276
 assert total_occupied == 6
-assert total_avail == 222
+assert total_avail == 270
 assert all_pii_clean is True
 
 print('\n=== VERIFYING LIVE /api/explorer/campus ENDPOINT ===')
@@ -84,11 +84,11 @@ with urllib.request.urlopen(req_campus) as resp:
     print(f'Campus Stats: {c_stats}')
     assert c_stats['total_hostels'] == 4
     assert c_stats['total_blocks'] == 6
-    assert c_stats['total_rooms'] == 98
-    assert c_stats['total_beds'] == 228
+    assert c_stats['total_rooms'] == 123
+    assert c_stats['total_beds'] == 276
     assert c_stats['occupied_beds'] == 6
-    assert c_stats['available_beds'] == 222
-    assert c_stats['occupancy_rate'] == 2.6
+    assert c_stats['available_beds'] == 270
+    assert round(c_stats['occupancy_rate'], 1) == 2.2
     
     # Check each hostel (Alphabetical IDs: 1=A, 2=B, 3=C, 4=D)
     hostel_map = {h['Hostel_ID']: h for h in c_hostels}
@@ -97,17 +97,17 @@ with urllib.request.urlopen(req_campus) as resp:
     assert 3 in hostel_map, 'Hostel C missing'
     assert 4 in hostel_map, 'Hostel D missing'
     
-    # Hostel A (ID 1, Boys): 2 blocks, 35 rooms, 72 beds, 4 occ
+    # Hostel A (ID 1, Boys): 2 blocks, 60 rooms, 120 beds, 4 occ
     ha = hostel_map[1]
     assert ha['Hostel_Name'] == 'Hostel A'
     assert ha['Hostel_Type'] == 'Boys'
     assert ha['total_blocks'] == 2
-    assert ha['total_rooms'] == 35
-    assert ha['total_beds'] == 72
+    assert ha['total_rooms'] == 60
+    assert ha['total_beds'] == 120
     assert ha['occupied_beds'] == 4
-    assert ha['available_beds'] == 68
+    assert ha['available_beds'] == 116
     assert ha['floor_count'] == 3
-    print('PASS Campus Hostel A (Boys): 2 Blocks, 35 Rooms, 72 Beds, 4 Occ, 68 Avail')
+    print('PASS Campus Hostel A (Boys): 2 Blocks, 60 Rooms, 120 Beds, 4 Occ, 116 Avail')
 
     # Hostel B (ID 2, Girls): 1 block, 2 rooms, 4 beds, 2 occ
     hb = hostel_map[2]

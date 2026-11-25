@@ -4,9 +4,7 @@ import { OrbitControls, Text, Billboard, Grid } from '@react-three/drei';
 import * as THREE from 'three';
 import { DynamicallyPositionedRoom, BuildingBounds, generateDynamicLayout } from '../../utils/explorerLayout';
 import { IllustrativeRoom } from '../../data/illustrativeHostel';
-import { 
-  RotateCcw
-} from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 
 export type Any3DRoom = DynamicallyPositionedRoom | IllustrativeRoom;
 
@@ -16,7 +14,7 @@ export interface Building3DProps {
   selectedFloor: number | 'all';
   selectedRoom: Any3DRoom | null;
   onSelectRoom: (room: any) => void;
-  cutawayMode: boolean;
+  cutawayMode?: boolean;
   onToggleCutaway?: () => void;
   className?: string;
 }
@@ -72,7 +70,7 @@ interface RoomMeshProps {
 }
 
 /**
- * Procedural Room Component
+ * Procedural Architectural Room Module
  * Generates an architectural room unit with walls, doorway, window, furniture,
  * and stable hitbox. Automatically handles row orientation (South vs North)
  * so doors always open toward the central corridor spine.
@@ -100,10 +98,6 @@ const RoomMesh: React.FC<RoomMeshProps> = ({
   const posY = room.position3D[1] + floorOffset;
   const posZ = room.position3D[2];
 
-  // In cutaway mode, if this room is in the South row and facing front,
-  // we section its exterior wall so the interior is 100% visible
-  const hideExteriorWall = cutawayMode && isSouth;
-
   return (
     <group
       position={[posX, posY, posZ]}
@@ -116,8 +110,8 @@ const RoomMesh: React.FC<RoomMeshProps> = ({
       <mesh position={[0, -height / 2 + 0.015, 0]} receiveShadow>
         <boxGeometry args={[width - 0.04, 0.03, depth - 0.04]} />
         <meshStandardMaterial
-          color={isSelected ? '#38bdf8' : hovered ? '#60a5fa' : '#e2e8f0'}
-          roughness={0.6}
+          color={isSelected ? '#38bdf8' : hovered ? '#60a5fa' : '#f8fafc'}
+          roughness={0.5}
           metalness={0.05}
         />
       </mesh>
@@ -128,57 +122,83 @@ const RoomMesh: React.FC<RoomMeshProps> = ({
         <meshBasicMaterial
           color={theme.accent}
           transparent
-          opacity={isDimmed ? 0.2 : hovered || isSelected ? 0.9 : 0.4}
+          opacity={isDimmed ? 0.2 : hovered || isSelected ? 0.95 : 0.6}
         />
       </mesh>
 
       {/* 2. Architectural Walls (Solid, non-coplanar primitives) */}
       {/* Left Partition Wall (-X) */}
       <mesh position={[-width / 2 + 0.03, 0.04, 0]} castShadow receiveShadow>
-        <boxGeometry args={[0.06, height * 0.92, depth - 0.08]} />
+        <boxGeometry args={[0.06, cutawayMode ? height * 0.75 : height * 0.92, depth - 0.08]} />
         <meshStandardMaterial
-          color={isDimmed ? '#94a3b8' : '#f1f5f9'}
+          color={isDimmed ? '#94a3b8' : '#e2e8f0'}
           roughness={0.8}
           transparent={isDimmed}
-          opacity={isDimmed ? 0.3 : 1.0}
+          opacity={isDimmed ? 0.25 : 1.0}
         />
       </mesh>
 
       {/* Right Partition Wall (+X) */}
       <mesh position={[width / 2 - 0.03, 0.04, 0]} castShadow receiveShadow>
-        <boxGeometry args={[0.06, height * 0.92, depth - 0.08]} />
+        <boxGeometry args={[0.06, cutawayMode ? height * 0.75 : height * 0.92, depth - 0.08]} />
         <meshStandardMaterial
-          color={isDimmed ? '#94a3b8' : '#f1f5f9'}
+          color={isDimmed ? '#94a3b8' : '#e2e8f0'}
           roughness={0.8}
           transparent={isDimmed}
-          opacity={isDimmed ? 0.3 : 1.0}
+          opacity={isDimmed ? 0.25 : 1.0}
         />
       </mesh>
 
-      {/* Exterior Wall & Window (Local -Z, facing exterior) */}
-      {!hideExteriorWall && (
+      {/* Exterior Facade (Local -Z, facing exterior) */}
+      {cutawayMode ? (
+        /* Open Architectural Cutaway View: Low balcony sill + translucent glass railing */
         <group position={[0, 0, -depth / 2 + 0.04]}>
-          {/* Left wall pillar */}
+          {/* Low Architectural Sill Wall */}
+          <mesh position={[0, -height / 2 + 0.16, 0]} castShadow receiveShadow>
+            <boxGeometry args={[width - 0.04, 0.32, 0.08]} />
+            <meshStandardMaterial color={isDimmed ? '#94a3b8' : '#cbd5e1'} roughness={0.7} />
+          </mesh>
+          {/* Architectural Balcony Glass Railing */}
+          <mesh position={[0, -height / 2 + 0.45, 0]}>
+            <boxGeometry args={[width - 0.08, 0.36, 0.02]} />
+            <meshPhysicalMaterial
+              color="#38bdf8"
+              transparent
+              opacity={0.35}
+              roughness={0.1}
+              transmission={0.5}
+              thickness={0.02}
+            />
+          </mesh>
+          {/* Corner Structural Pillars */}
+          <mesh position={[-width / 2 + 0.04, 0.04, 0]} castShadow>
+            <boxGeometry args={[0.08, height * 0.9, 0.08]} />
+            <meshStandardMaterial color="#64748b" roughness={0.6} />
+          </mesh>
+          <mesh position={[width / 2 - 0.04, 0.04, 0]} castShadow>
+            <boxGeometry args={[0.08, height * 0.9, 0.08]} />
+            <meshStandardMaterial color="#64748b" roughness={0.6} />
+          </mesh>
+        </group>
+      ) : (
+        /* Enclosed Exterior Facade: Full Height Wall with Architectural Window */
+        <group position={[0, 0, -depth / 2 + 0.04]}>
           <mesh position={[-width * 0.35, 0.04, 0]} castShadow receiveShadow>
             <boxGeometry args={[width * 0.3, height * 0.92, 0.08]} />
             <meshStandardMaterial color={isDimmed ? '#94a3b8' : '#cbd5e1'} roughness={0.7} />
           </mesh>
-          {/* Right wall pillar */}
           <mesh position={[width * 0.35, 0.04, 0]} castShadow receiveShadow>
             <boxGeometry args={[width * 0.3, height * 0.92, 0.08]} />
             <meshStandardMaterial color={isDimmed ? '#94a3b8' : '#cbd5e1'} roughness={0.7} />
           </mesh>
-          {/* Wall Sill below Window */}
           <mesh position={[0, -height * 0.25, 0]} castShadow receiveShadow>
             <boxGeometry args={[width * 0.42, height * 0.34, 0.08]} />
             <meshStandardMaterial color={isDimmed ? '#94a3b8' : '#cbd5e1'} roughness={0.7} />
           </mesh>
-          {/* Wall Lintel above Window */}
           <mesh position={[0, height * 0.38, 0]} castShadow receiveShadow>
             <boxGeometry args={[width * 0.42, height * 0.24, 0.08]} />
             <meshStandardMaterial color={isDimmed ? '#94a3b8' : '#cbd5e1'} roughness={0.7} />
           </mesh>
-          {/* Architectural Window Glass Pane */}
           <mesh position={[0, 0.08, 0]}>
             <boxGeometry args={[width * 0.4, height * 0.38, 0.02]} />
             <meshPhysicalMaterial
@@ -195,21 +215,42 @@ const RoomMesh: React.FC<RoomMeshProps> = ({
 
       {/* Corridor Wall with Entrance Doorway (Local +Z, facing corridor spine) */}
       <group position={[0, 0, depth / 2 - 0.04]}>
-        {/* Left wall segment beside doorway */}
-        <mesh position={[-width * 0.22, 0.04, 0]} castShadow receiveShadow>
-          <boxGeometry args={[width * 0.54, height * 0.92, 0.08]} />
-          <meshStandardMaterial color={isDimmed ? '#94a3b8' : '#e2e8f0'} roughness={0.8} />
-        </mesh>
-        {/* Doorway Header Lintel */}
-        <mesh position={[width * 0.25, height * 0.38, 0]} castShadow receiveShadow>
-          <boxGeometry args={[0.54, height * 0.24, 0.08]} />
-          <meshStandardMaterial color={isDimmed ? '#94a3b8' : '#e2e8f0'} roughness={0.8} />
-        </mesh>
-        {/* Slightly Ajar Wooden Door Panel */}
-        <mesh position={[width * 0.12, 0, 0.12]} rotation={[0, -0.45, 0]}>
-          <boxGeometry args={[0.48, height * 0.78, 0.04]} />
-          <meshStandardMaterial color="#78350f" roughness={0.6} />
-        </mesh>
+        {cutawayMode ? (
+          /* Cutaway Corridor: Low architectural partition with doorway archway opening */
+          <group>
+            {/* Low Corridor Partition */}
+            <mesh position={[-width * 0.25, -height / 2 + 0.22, 0]} castShadow receiveShadow>
+              <boxGeometry args={[width * 0.5, 0.44, 0.06]} />
+              <meshStandardMaterial color={isDimmed ? '#94a3b8' : '#e2e8f0'} roughness={0.8} />
+            </mesh>
+            {/* Doorway Header Lintel */}
+            <mesh position={[width * 0.25, height * 0.38, 0]} castShadow receiveShadow>
+              <boxGeometry args={[0.54, height * 0.24, 0.06]} />
+              <meshStandardMaterial color={isDimmed ? '#94a3b8' : '#cbd5e1'} roughness={0.8} />
+            </mesh>
+            {/* Open Door Frame */}
+            <mesh position={[width * 0.12, -0.05, 0.1]} rotation={[0, -0.6, 0]}>
+              <boxGeometry args={[0.46, height * 0.72, 0.03]} />
+              <meshStandardMaterial color="#78350f" roughness={0.6} />
+            </mesh>
+          </group>
+        ) : (
+          /* Full Enclosed Corridor Wall */
+          <group>
+            <mesh position={[-width * 0.22, 0.04, 0]} castShadow receiveShadow>
+              <boxGeometry args={[width * 0.54, height * 0.92, 0.08]} />
+              <meshStandardMaterial color={isDimmed ? '#94a3b8' : '#e2e8f0'} roughness={0.8} />
+            </mesh>
+            <mesh position={[width * 0.25, height * 0.38, 0]} castShadow receiveShadow>
+              <boxGeometry args={[0.54, height * 0.24, 0.08]} />
+              <meshStandardMaterial color={isDimmed ? '#94a3b8' : '#e2e8f0'} roughness={0.8} />
+            </mesh>
+            <mesh position={[width * 0.12, 0, 0.12]} rotation={[0, -0.45, 0]}>
+              <boxGeometry args={[0.48, height * 0.78, 0.04]} />
+              <meshStandardMaterial color="#78350f" roughness={0.6} />
+            </mesh>
+          </group>
+        )}
       </group>
 
       {/* 3. Detailed Physical Furniture Inside Room */}
@@ -222,7 +263,7 @@ const RoomMesh: React.FC<RoomMeshProps> = ({
               ? rawBeds
               : Array.from({ length: Math.min(room.Capacity ?? 0, 3) }).map((_, i) => ({
                   Bed_ID: room.Room_ID * 10 + i + 1,
-                  Bed_Number: String(i + 1),
+                  Bed_Number: String.fromCharCode(65 + i), // A, B, C
                   Bed_Type: 'Single',
                   Bed_Status: i < (room.occupiedBeds ?? 0) ? 'Occupied' : 'Available',
                   is_occupied: i < (room.occupiedBeds ?? 0),
@@ -250,7 +291,7 @@ const RoomMesh: React.FC<RoomMeshProps> = ({
                 : '#10b981';
 
               return (
-                <group key={`bed-${bed.Bed_ID}`} position={[xPos, 0, -0.15]}>
+                <group key={`bed-${bed.Bed_ID || i}`} position={[xPos, 0, -0.15]}>
                   {/* Bed Frame */}
                   <mesh position={[0, 0.08, 0]} castShadow receiveShadow>
                     <boxGeometry args={[bedWidth, 0.08, bedLen]} />
@@ -428,12 +469,13 @@ export const Building3D: React.FC<Building3DProps> = ({
   selectedFloor,
   selectedRoom,
   onSelectRoom,
-  cutawayMode,
+  cutawayMode = true,
   onToggleCutaway,
   className,
 }) => {
   const [isExploded, setIsExploded] = useState(false);
   const [internalCutaway, setInternalCutaway] = useState(cutawayMode);
+  const [showRoof, setShowRoof] = useState(false);
 
   // Synchronize internal and external cutaway state
   const activeCutaway = onToggleCutaway ? cutawayMode : internalCutaway;
@@ -456,7 +498,7 @@ export const Building3D: React.FC<Building3DProps> = ({
 
   // Structural Dimensions derived safely from effective bounds or computed defaults
   const floorHeight = effectiveBounds?.floorHeight ?? 1.7;
-  const buildingWidth = effectiveBounds?.width ?? 12.0;
+  const buildingWidth = effectiveBounds?.width ?? 16.2;
   const buildingDepth = effectiveBounds?.depth ?? 7.2;
   const renderedFloors = effectiveBounds?.floors && effectiveBounds.floors.length > 0 ? effectiveBounds.floors : [1, 2, 3];
   const floorCount = renderedFloors.length;
@@ -469,7 +511,7 @@ export const Building3D: React.FC<Building3DProps> = ({
   const roofW = buildingWidth + 0.4;
   const roofD = buildingDepth + 0.4;
 
-  // Calibrated vertical centering and camera framing
+  // Calibrated vertical centering and elevated isometric axonometric framing
   const baseDim = Math.max(buildingWidth, buildingDepth);
   const targetY = Number((totalHeight * 0.42).toFixed(2));
   const cameraTarget: [number, number, number] = useMemo(
@@ -480,9 +522,9 @@ export const Building3D: React.FC<Building3DProps> = ({
   const framingDist = Math.max(16, baseDim * 1.35 + totalHeight * 0.65);
   const cameraPos: [number, number, number] = useMemo(
     () => [
-      Number((buildingWidth * 0.78).toFixed(2)),
-      Number((totalHeight * 0.95 + 2.8).toFixed(2)),
-      Number((buildingDepth * 1.5 + framingDist * 0.45).toFixed(2)),
+      Number((buildingWidth * 0.72).toFixed(2)),
+      Number((totalHeight * 1.05 + 3.2).toFixed(2)),
+      Number((buildingDepth * 1.45 + framingDist * 0.42).toFixed(2)),
     ],
     [buildingWidth, totalHeight, buildingDepth, framingDist]
   );
@@ -523,10 +565,10 @@ export const Building3D: React.FC<Building3DProps> = ({
         }}
       >
         {/* Architectural Lighting with calibrated normalBias & shadowBias */}
-        <ambientLight intensity={0.75} />
+        <ambientLight intensity={0.8} />
         <directionalLight
           position={[25, 45, 20]}
-          intensity={1.25}
+          intensity={1.3}
           castShadow
           shadow-mapSize-width={2048}
           shadow-mapSize-height={2048}
@@ -539,8 +581,8 @@ export const Building3D: React.FC<Building3DProps> = ({
           shadow-bias={-0.0005} // ELIMINATES SHADOW ACNE AND DIAGONAL STRIPES
           shadow-normalBias={0.04} // ELIMINATES SURFACE FRAGMENTATION
         />
-        <directionalLight position={[-20, 25, -25]} intensity={0.45} />
-        <pointLight position={[0, totalHeight + 4, 0]} intensity={0.5} color="#38bdf8" />
+        <directionalLight position={[-20, 25, -25]} intensity={0.5} />
+        <pointLight position={[0, totalHeight + 4, 0]} intensity={0.6} color="#38bdf8" />
 
         {/* Orbit Controls with Dynamic Target */}
         <OrbitControls
@@ -585,6 +627,8 @@ export const Building3D: React.FC<Building3DProps> = ({
         {/* Dynamic Architectural Floor Slabs & Corridors for each storey */}
         {renderedFloors.map((floorNum, idx) => {
           const isDimmed = selectedFloor !== 'all' && selectedFloor !== floorNum;
+          // When a single floor is selected, upper slabs become semi-transparent so view is unobstructed
+          const isUpperFloorOccluding = selectedFloor !== 'all' && typeof selectedFloor === 'number' && floorNum > selectedFloor;
           const floorOffset = isExploded ? idx * 3.0 : 0;
           const slabBaseY = idx * floorHeight + floorOffset;
 
@@ -595,14 +639,14 @@ export const Building3D: React.FC<Building3DProps> = ({
 
           return (
             <group key={`floor-level-${floorNum}`}>
-              {/* Solid Storey Base Slab (Sits strictly beneath room floor plane) */}
+              {/* Storey Base Slab (Sits strictly beneath room floor plane) */}
               <mesh position={[0, slabBaseY - 0.05, 0]} receiveShadow>
-                <boxGeometry args={[slabW, 0.1, slabD]} />
+                <boxGeometry args={[slabW, 0.08, slabD]} />
                 <meshStandardMaterial
                   color={isDimmed ? '#1e293b' : '#334155'}
                   roughness={0.65}
-                  transparent={isDimmed}
-                  opacity={isDimmed ? 0.2 : 1.0}
+                  transparent={isDimmed || isUpperFloorOccluding}
+                  opacity={isUpperFloorOccluding ? 0.12 : isDimmed ? 0.25 : 1.0}
                 />
               </mesh>
 
@@ -612,8 +656,8 @@ export const Building3D: React.FC<Building3DProps> = ({
                 <meshStandardMaterial
                   color={isDimmed ? '#334155' : '#475569'}
                   roughness={0.6}
-                  transparent={isDimmed}
-                  opacity={isDimmed ? 0.2 : 1.0}
+                  transparent={isDimmed || isUpperFloorOccluding}
+                  opacity={isUpperFloorOccluding ? 0.12 : isDimmed ? 0.25 : 1.0}
                 />
               </mesh>
 
@@ -624,7 +668,7 @@ export const Building3D: React.FC<Building3DProps> = ({
               </mesh>
 
               {/* East & West Corridor End-Cap Walls with Windows */}
-              {!isDimmed && (
+              {!isDimmed && !isUpperFloorOccluding && (
                 <group>
                   {/* West End Wall */}
                   <mesh position={[-slabW / 2 + 0.04, slabBaseY + floorHeight / 2 - 0.05, 0]} castShadow>
@@ -651,8 +695,8 @@ export const Building3D: React.FC<Building3DProps> = ({
           isExploded={isExploded}
         />
 
-        {/* Architectural Roof (Rendered when cutaway is off and not exploded) */}
-        {!activeCutaway && !isExploded && selectedFloor === 'all' && (
+        {/* Architectural Roof (Rendered when showRoof is toggled on and not exploded) */}
+        {showRoof && !isExploded && selectedFloor === 'all' && (
           <group position={[0, roofY, 0]}>
             {/* Main Roof Slab */}
             <mesh position={[0, 0.05, 0]} castShadow receiveShadow>
@@ -694,6 +738,28 @@ export const Building3D: React.FC<Building3DProps> = ({
           </group>
         )}
 
+        {/* Subtle Architectural Perimeter Cornice when roof is open */}
+        {!showRoof && !isExploded && selectedFloor === 'all' && (
+          <group position={[0, roofY, 0]}>
+            <mesh position={[0, 0.04, -roofD / 2 + 0.04]}>
+              <boxGeometry args={[roofW, 0.08, 0.08]} />
+              <meshStandardMaterial color="#334155" roughness={0.7} />
+            </mesh>
+            <mesh position={[0, 0.04, roofD / 2 - 0.04]}>
+              <boxGeometry args={[roofW, 0.08, 0.08]} />
+              <meshStandardMaterial color="#334155" roughness={0.7} />
+            </mesh>
+            <mesh position={[-roofW / 2 + 0.04, 0.04, 0]}>
+              <boxGeometry args={[0.08, 0.08, roofD]} />
+              <meshStandardMaterial color="#334155" roughness={0.7} />
+            </mesh>
+            <mesh position={[roofW / 2 - 0.04, 0.04, 0]}>
+              <boxGeometry args={[0.08, 0.08, roofD]} />
+              <meshStandardMaterial color="#334155" roughness={0.7} />
+            </mesh>
+          </group>
+        )}
+
         {/* Individual Procedural 3D Room Meshes with Furniture */}
         {rooms.map((room) => {
           const isDimmed = selectedFloor !== 'all' && selectedFloor !== room.Floor;
@@ -725,7 +791,7 @@ export const Building3D: React.FC<Building3DProps> = ({
           <span className="text-xs font-bold text-slate-200">Interactive 3D Building Model</span>
         </div>
 
-        {/* Quick View Controls: Explode Floors, Cutaway & Reset Camera */}
+        {/* Quick View Controls: Explode Floors, Cutaway, Roof & Reset Camera */}
         <div className="pointer-events-auto flex items-center gap-1.5 flex-wrap">
           <button
             onClick={() => setIsExploded(!isExploded)}
@@ -746,7 +812,18 @@ export const Building3D: React.FC<Building3DProps> = ({
                 : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:bg-slate-800'
             }`}
           >
-            {activeCutaway ? 'Show Exterior' : 'Cutaway Section'}
+            {activeCutaway ? 'Cutaway View' : 'Exterior Facade'}
+          </button>
+
+          <button
+            onClick={() => setShowRoof(!showRoof)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer shadow-md ${
+              showRoof
+                ? 'bg-indigo-600 text-white border-indigo-400'
+                : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:bg-slate-800'
+            }`}
+          >
+            {showRoof ? 'Hide Roof' : 'Show Roof'}
           </button>
 
           <button

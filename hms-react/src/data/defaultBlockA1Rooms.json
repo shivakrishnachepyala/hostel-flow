@@ -1,0 +1,992 @@
+[
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 2,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 1,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 301,
+    "Room_Number": "101",
+    "Room_Type": "Double",
+    "availableBeds": 1,
+    "beds": [
+      {
+        "Bed_ID": 401,
+        "Bed_Number": "A",
+        "Bed_Status": "Occupied",
+        "Bed_Type": "Single",
+        "is_occupied": true
+      },
+      {
+        "Bed_ID": 402,
+        "Bed_Number": "B",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 1,
+    "status": "partially-occupied",
+    "totalBeds": 2
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 2,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 1,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 302,
+    "Room_Number": "102",
+    "Room_Type": "Double",
+    "availableBeds": 1,
+    "beds": [
+      {
+        "Bed_ID": 403,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 404,
+        "Bed_Number": "B",
+        "Bed_Status": "Occupied",
+        "Bed_Type": "Single",
+        "is_occupied": true
+      }
+    ],
+    "occupiedBeds": 1,
+    "status": "partially-occupied",
+    "totalBeds": 2
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 3,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 1,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 303,
+    "Room_Number": "103",
+    "Room_Type": "Triple",
+    "availableBeds": 2,
+    "beds": [
+      {
+        "Bed_ID": 405,
+        "Bed_Number": "A",
+        "Bed_Status": "Occupied",
+        "Bed_Type": "Single",
+        "is_occupied": true
+      },
+      {
+        "Bed_ID": 406,
+        "Bed_Number": "B",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 407,
+        "Bed_Number": "C",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 1,
+    "status": "partially-occupied",
+    "totalBeds": 3
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 1,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 1,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 591,
+    "Room_Number": "104",
+    "Room_Type": "Single",
+    "availableBeds": 1,
+    "beds": [
+      {
+        "Bed_ID": 2211,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 0,
+    "status": "available",
+    "totalBeds": 1
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 1,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 1,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 592,
+    "Room_Number": "105",
+    "Room_Type": "Single",
+    "availableBeds": 1,
+    "beds": [
+      {
+        "Bed_ID": 2212,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 0,
+    "status": "available",
+    "totalBeds": 1
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 2,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 1,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 593,
+    "Room_Number": "106",
+    "Room_Type": "Double",
+    "availableBeds": 2,
+    "beds": [
+      {
+        "Bed_ID": 2213,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 2214,
+        "Bed_Number": "B",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 0,
+    "status": "available",
+    "totalBeds": 2
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 2,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 1,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 594,
+    "Room_Number": "107",
+    "Room_Type": "Double",
+    "availableBeds": 2,
+    "beds": [
+      {
+        "Bed_ID": 2215,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 2216,
+        "Bed_Number": "B",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 0,
+    "status": "available",
+    "totalBeds": 2
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 2,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 1,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 595,
+    "Room_Number": "108",
+    "Room_Type": "Double",
+    "availableBeds": 2,
+    "beds": [
+      {
+        "Bed_ID": 2217,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 2218,
+        "Bed_Number": "B",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 0,
+    "status": "available",
+    "totalBeds": 2
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 2,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 1,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 596,
+    "Room_Number": "109",
+    "Room_Type": "Double",
+    "availableBeds": 2,
+    "beds": [
+      {
+        "Bed_ID": 2219,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 2220,
+        "Bed_Number": "B",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 0,
+    "status": "available",
+    "totalBeds": 2
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 3,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 1,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 597,
+    "Room_Number": "110",
+    "Room_Type": "Triple",
+    "availableBeds": 3,
+    "beds": [
+      {
+        "Bed_ID": 2221,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 2222,
+        "Bed_Number": "B",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 2223,
+        "Bed_Number": "C",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 0,
+    "status": "available",
+    "totalBeds": 3
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 2,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 2,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 304,
+    "Room_Number": "201",
+    "Room_Type": "Double",
+    "availableBeds": 1,
+    "beds": [
+      {
+        "Bed_ID": 408,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 409,
+        "Bed_Number": "B",
+        "Bed_Status": "Occupied",
+        "Bed_Type": "Single",
+        "is_occupied": true
+      }
+    ],
+    "occupiedBeds": 1,
+    "status": "partially-occupied",
+    "totalBeds": 2
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 3,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 2,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 305,
+    "Room_Number": "202",
+    "Room_Type": "Triple",
+    "availableBeds": 3,
+    "beds": [
+      {
+        "Bed_ID": 410,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 411,
+        "Bed_Number": "B",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 412,
+        "Bed_Number": "C",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 0,
+    "status": "available",
+    "totalBeds": 3
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 1,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 2,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 598,
+    "Room_Number": "203",
+    "Room_Type": "Single",
+    "availableBeds": 1,
+    "beds": [
+      {
+        "Bed_ID": 2224,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 0,
+    "status": "available",
+    "totalBeds": 1
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 1,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 2,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 599,
+    "Room_Number": "204",
+    "Room_Type": "Single",
+    "availableBeds": 1,
+    "beds": [
+      {
+        "Bed_ID": 2225,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 0,
+    "status": "available",
+    "totalBeds": 1
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 2,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 2,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 600,
+    "Room_Number": "205",
+    "Room_Type": "Double",
+    "availableBeds": 2,
+    "beds": [
+      {
+        "Bed_ID": 2226,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 2227,
+        "Bed_Number": "B",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 0,
+    "status": "available",
+    "totalBeds": 2
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 2,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 2,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 601,
+    "Room_Number": "206",
+    "Room_Type": "Double",
+    "availableBeds": 2,
+    "beds": [
+      {
+        "Bed_ID": 2228,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 2229,
+        "Bed_Number": "B",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 0,
+    "status": "available",
+    "totalBeds": 2
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 2,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 2,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 602,
+    "Room_Number": "207",
+    "Room_Type": "Double",
+    "availableBeds": 2,
+    "beds": [
+      {
+        "Bed_ID": 2230,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 2231,
+        "Bed_Number": "B",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 0,
+    "status": "available",
+    "totalBeds": 2
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 2,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 2,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 603,
+    "Room_Number": "208",
+    "Room_Type": "Double",
+    "availableBeds": 2,
+    "beds": [
+      {
+        "Bed_ID": 2232,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 2233,
+        "Bed_Number": "B",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 0,
+    "status": "available",
+    "totalBeds": 2
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 2,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 2,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 604,
+    "Room_Number": "209",
+    "Room_Type": "Double",
+    "availableBeds": 2,
+    "beds": [
+      {
+        "Bed_ID": 2234,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 2235,
+        "Bed_Number": "B",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 0,
+    "status": "available",
+    "totalBeds": 2
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 3,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 2,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 605,
+    "Room_Number": "210",
+    "Room_Type": "Triple",
+    "availableBeds": 3,
+    "beds": [
+      {
+        "Bed_ID": 2236,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 2237,
+        "Bed_Number": "B",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 2238,
+        "Bed_Number": "C",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 0,
+    "status": "available",
+    "totalBeds": 3
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 1,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 3,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 606,
+    "Room_Number": "301",
+    "Room_Type": "Single",
+    "availableBeds": 1,
+    "beds": [
+      {
+        "Bed_ID": 2239,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 0,
+    "status": "available",
+    "totalBeds": 1
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 1,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 3,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 607,
+    "Room_Number": "302",
+    "Room_Type": "Single",
+    "availableBeds": 1,
+    "beds": [
+      {
+        "Bed_ID": 2240,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 0,
+    "status": "available",
+    "totalBeds": 1
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 2,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 3,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 608,
+    "Room_Number": "303",
+    "Room_Type": "Double",
+    "availableBeds": 2,
+    "beds": [
+      {
+        "Bed_ID": 2241,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 2242,
+        "Bed_Number": "B",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 0,
+    "status": "available",
+    "totalBeds": 2
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 2,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 3,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 609,
+    "Room_Number": "304",
+    "Room_Type": "Double",
+    "availableBeds": 2,
+    "beds": [
+      {
+        "Bed_ID": 2243,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 2244,
+        "Bed_Number": "B",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 0,
+    "status": "available",
+    "totalBeds": 2
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 2,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 3,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 610,
+    "Room_Number": "305",
+    "Room_Type": "Double",
+    "availableBeds": 2,
+    "beds": [
+      {
+        "Bed_ID": 2245,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 2246,
+        "Bed_Number": "B",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 0,
+    "status": "available",
+    "totalBeds": 2
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 2,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 3,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 611,
+    "Room_Number": "306",
+    "Room_Type": "Double",
+    "availableBeds": 2,
+    "beds": [
+      {
+        "Bed_ID": 2247,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 2248,
+        "Bed_Number": "B",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 0,
+    "status": "available",
+    "totalBeds": 2
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 2,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 3,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 612,
+    "Room_Number": "307",
+    "Room_Type": "Double",
+    "availableBeds": 2,
+    "beds": [
+      {
+        "Bed_ID": 2249,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 2250,
+        "Bed_Number": "B",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 0,
+    "status": "available",
+    "totalBeds": 2
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 2,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 3,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 613,
+    "Room_Number": "308",
+    "Room_Type": "Double",
+    "availableBeds": 2,
+    "beds": [
+      {
+        "Bed_ID": 2251,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 2252,
+        "Bed_Number": "B",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 0,
+    "status": "available",
+    "totalBeds": 2
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 3,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 3,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 614,
+    "Room_Number": "309",
+    "Room_Type": "Triple",
+    "availableBeds": 3,
+    "beds": [
+      {
+        "Bed_ID": 2253,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 2254,
+        "Bed_Number": "B",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 2255,
+        "Bed_Number": "C",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 0,
+    "status": "available",
+    "totalBeds": 3
+  },
+  {
+    "Block_ID": 201,
+    "Block_Name": "Block A1",
+    "Capacity": 3,
+    "Facilities": "Fan, Study Table, Wardrobe",
+    "Floor": 3,
+    "Hostel_ID": 1,
+    "Hostel_Name": "Hostel A",
+    "Layout_Data": null,
+    "Room_ID": 615,
+    "Room_Number": "310",
+    "Room_Type": "Triple",
+    "availableBeds": 3,
+    "beds": [
+      {
+        "Bed_ID": 2256,
+        "Bed_Number": "A",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 2257,
+        "Bed_Number": "B",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      },
+      {
+        "Bed_ID": 2258,
+        "Bed_Number": "C",
+        "Bed_Status": "Available",
+        "Bed_Type": "Single",
+        "is_occupied": false
+      }
+    ],
+    "occupiedBeds": 0,
+    "status": "available",
+    "totalBeds": 3
+  }
+]
